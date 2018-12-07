@@ -1,3 +1,5 @@
+// Due to the order of importing dependencies,
+// we have to manually keep a list of layouts.
 export default [
   "LayoutCorners",
   "LayoutDefault",
@@ -7,5 +9,7 @@ export default [
   "LayoutGlassLite",
   "LayoutLine",
   "LayoutPhoenix",
-  "LayoutShipStation"
+  "LayoutShipStation",
+  "LayoutEpsilon",
+  "LayoutBlack"
 ];

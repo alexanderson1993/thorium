@@ -39,10 +39,12 @@ addCardToStation(stationSetID: ID!, stationName: String!, cardName: String!, car
 removeCardFromStation(stationSetID: ID!, stationName: String!, cardName: String!):String
 editCardInStationSet(stationSetID: ID!, stationName: String!, cardName: String!, newCardName: String, cardComponent: String, cardIcon: String):String
 setStationLogin(stationSetID: ID!, stationName: String!, login: Boolean!):String
+setStationLayout(stationSetID: ID!, stationName: String!, layout: String!):String
 setStationExecutive(stationSetID: ID!, stationName: String!, exec: Boolean!):String
 toggleStationWidgets(stationSetID: ID!, stationName: String!, widget: String!, state: Boolean!): String
 setStationDescription(stationSetID: ID!, stationName: String!, description: String!):String
 setStationTraining(stationSetID: ID!, stationName: String!, training: String!):String
+setStationAmbiance(stationSetID: ID!, stationName: String!, ambiance: String!):String
 
 #Macro: Start Training Mode
 trainingMode(simulatorId:ID!):String

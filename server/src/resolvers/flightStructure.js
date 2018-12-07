@@ -178,6 +178,9 @@ export const FlightStructureMutations = {
   setSimulatorStationLogin(rootValue, params, context) {
     App.handleEvent(params, "setSimulatorStationLogin", context);
   },
+  setSimulatorStationLayout(rootValue, params, context) {
+    App.handleEvent(params, "setSimulatorStationLayout", context);
+  },
   setSimulatorStationExecutive(rootValue, params, context) {
     App.handleEvent(params, "setSimulatorStationExecutive", context);
   },
@@ -279,8 +282,14 @@ export const FlightStructureMutations = {
   setStationDescription(root, args, context) {
     App.handleEvent(args, "setStationDescription", context);
   },
+  setStationLayout(root, args, context) {
+    App.handleEvent(args, "setStationLayout", context);
+  },
   setStationTraining(root, args, context) {
     App.handleEvent(args, "setStationTraining", context);
+  },
+  setStationAmbiance(root, args, context) {
+    App.handleEvent(args, "setStationAmbiance", context);
   },
 
   trainingMode(root, args, context) {

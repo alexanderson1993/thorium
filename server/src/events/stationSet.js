@@ -114,9 +114,22 @@ App.on(
     pubsub.publish("stationSetUpdate", App.stationSets);
   }
 );
+App.on("setStationLayout", ({ stationSetID, stationName, layout }) => {
+  App.stationSets
+    .find(s => s.id === stationSetID)
+    .setStationLayout(stationName, layout);
+  pubsub.publish("stationSetUpdate", App.stationSets);
+});
 App.on("setStationTraining", ({ stationSetID, stationName, training }) => {
   App.stationSets
     .find(s => s.id === stationSetID)
     .setTraining(stationName, training);
+  pubsub.publish("stationSetUpdate", App.stationSets);
+});
+
+App.on("setStationAmbiance", ({ stationSetID, stationName, ambiance }) => {
+  App.stationSets
+    .find(s => s.id === stationSetID)
+    .setAmbiance(stationName, ambiance);
   pubsub.publish("stationSetUpdate", App.stationSets);
 });

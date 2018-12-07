@@ -40,6 +40,7 @@ export { default as SignalJammer } from "./signalJammer";
 export { default as Exocomp } from "./exocomp";
 export { default as Library } from "./library";
 export { default as SoftwarePanel } from "./softwarePanels";
+export { default as Environment } from "./environment";
 
 export const role = `
 type role {
@@ -68,3 +69,4 @@ export { default as Thorium } from "./thorium.js";
 export { default as Externals } from "./externals";
 export { default as Railgun } from "./railgun.js";
 export { default as JumpDrive } from "./jumpDrive.js";
+export { default as Task } from "./tasks";

@@ -32,6 +32,7 @@ type Sensors implements SystemInterface{
 
   defaultHitpoints: Int
   defaultSpeed: Float
+  missPercent: Float
 }
 type SensorScan {
   id: ID
@@ -87,6 +88,17 @@ enum ParticleTypes {
   Neutrino
   AntiMatter
   Anomaly
+
+  #Also use this for Science Probe bursts
+  Resonance
+  Graviton
+  Lithium
+  Magnetic
+  Helium
+  Hydrogen
+  Oxygen
+  Carbon
+  Radiation
 }
 type SensorsSegment {
   ring: Int
@@ -100,11 +112,6 @@ type PresetAnswer {
 input PresetAnswerInput {
   label: String
   value: String
-}
-input CoordinatesInput {
-  x: Float
-  y: Float
-  z: Float
 }
 input SensorContactInput {
   id: ID

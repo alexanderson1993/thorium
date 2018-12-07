@@ -21,6 +21,16 @@ class TacticalPath {
   }
 }
 
+const thrusterControls = {
+  rotation: "",
+  reversed: false,
+  matchRotation: true,
+  up: "",
+  down: "",
+  left: "",
+  right: ""
+};
+
 class TacticalItem {
   constructor(params) {
     this.id = params.dup ? uuid.v4() : params.id || uuid.v4();
@@ -40,6 +50,7 @@ class TacticalItem {
     this.wasd = params.wasd || false;
     this.ijkl = params.ijkl || false;
     this.thrusters = params.thrusters || false;
+    this.thrusterControls = params.thrusterControls || { ...thrusterControls };
   }
   update({
     label,
@@ -58,7 +69,8 @@ class TacticalItem {
     wasd,
     ijkl,
     thrusters,
-    rotationMatch
+    rotationMatch,
+    thrusterControls
   }) {
     if (label || label === null || label === "") this.label = label;
     if (font) this.font = font;
@@ -78,6 +90,13 @@ class TacticalItem {
     if (thrusters || thrusters === false) this.thrusters = thrusters;
     if (rotationMatch || rotationMatch === false)
       this.rotationMatch = rotationMatch;
+    if (thrusterControls) {
+      this.thrusterControls = thrusterControls;
+      // if the speed is set to instant, change it to a reasonable speed
+      if (this.speed >= 1000) {
+        this.speed = 0.05;
+      }
+    }
   }
 }
 

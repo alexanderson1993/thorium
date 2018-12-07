@@ -80,6 +80,9 @@ import JumpDrive from "./JumpDrive";
 import BridgeMap from "./BridgeMap";
 import ThrustersLite from "./Thrusters/lite";
 import ParticleDetector from "./ParticleDetector";
+import Tasks from "./Tasks";
+import ProbeScience from "./ProbeScience";
+// import DockingPorts from "./DockingPorts";
 
 // Cores
 import EngineControlCore from "./EngineControl/core";
@@ -147,12 +150,17 @@ import KeypadCore from "./Keypad/core";
 import AssetsCore from "./AssetsCore/core";
 import HandheldScannerCore from "./HandheldScanner/core";
 import NewMessagingCore from "./Messaging/newCore";
+import TasksCore from "./Tasks/core";
 import AlternateSensorsCore from "./ParticleDetector/core";
+import CoreFeed from "./CoreFeed";
+import RoomSearchCore from "./RoomSearch";
+
 // Widgets
 import ComposerWidget from "./LongRangeComm/Composer";
 import CalculatorWidget from "./Widgets/calculator";
 import RemoteWidget from "./RemoteAccess/widget";
 import Keyboard from "./Widgets/keyboard";
+import SensorsWidget from "./Sensors/widget";
 
 const Views = {
   Login,
@@ -235,7 +243,10 @@ const Views = {
   JumpDrive,
   BridgeMap,
   ThrustersLite,
-  ParticleDetector
+  ParticleDetector,
+  Tasks,
+  ProbeScience
+  // DockingPorts
 };
 
 export const Widgets = {
@@ -302,6 +313,20 @@ export const Widgets = {
     name: "Officer Log",
     size: "lg",
     color: "rgb(255,255,100)"
+  },
+  tasks: {
+    widget: Tasks,
+    icon: "tasks",
+    name: "Tasks",
+    size: "lg",
+    color: "#6F84EE"
+  },
+  sensors: {
+    widget: SensorsWidget,
+    icon: "circle-o-notch",
+    name: "Sensors",
+    size: "lg",
+    color: "#6FEDC5"
   }
 };
 
@@ -371,7 +396,10 @@ export const Cores = {
   AssetsCore,
   HandheldScannerCore,
   NewMessagingCore,
-  AlternateSensorsCore
+  TasksCore,
+  AlternateSensorsCore,
+  CoreFeed,
+  RoomSearchCore
 };
 
 export default Views;

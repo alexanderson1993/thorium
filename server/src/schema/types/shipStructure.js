@@ -9,6 +9,7 @@ type Deck {
   rooms: [Room]
   hallway: String
   crewCount: Int
+  environment: Environment
 }
 
 type Room {
@@ -73,6 +74,11 @@ type InventoryMetadata {
 
 input InventoryCount {
   inventory: ID
+  count: Int
+}
+
+input InventoryCountInput {
+  id: ID
   count: Int
 }
 

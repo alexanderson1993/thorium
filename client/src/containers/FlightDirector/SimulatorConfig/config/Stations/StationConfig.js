@@ -1,13 +1,20 @@
-import React, { Fragment } from "react";
-import { Input, Button, Container, Row, Col, Label } from "reactstrap";
+import React from "react";
+import { Input, Container, Row, Col, Label } from "reactstrap";
 import { Mutation } from "react-apollo";
 import gql from "graphql-tag";
 import ops from "./ops";
 import FontAwesome from "react-fontawesome";
 import Views, { Widgets } from "components/views/index";
-import FileExplorer from "components/views/TacticalMap/fileExplorer";
 import ExtraMessageGroups from "./messageGroups";
 import { titleCase } from "change-case";
+import TrainingConfig from "./trainingConfig";
+import AmbianceConfig from "./ambianceConfig";
+import LayoutList from "components/layouts";
+
+const Layouts = Object.keys(LayoutList).filter(
+  s => s.indexOf("Viewscreen") === -1
+);
+
 const viewList = Object.keys(Views)
   .filter(v => {
     return v !== "Offline" && v !== "Login" && v !== "Viewscreen";
@@ -115,6 +122,17 @@ const ConfigStation = props => {
     };
     client.mutate({
       mutation: ops.toggleStationExec,
+      variables
+    });
+  };
+  const setStationLayout = evt => {
+    const variables = {
+      id: selectedStationSet,
+      name: station.name,
+      layout: evt.target.value
+    };
+    client.mutate({
+      mutation: ops.setStationLayout,
       variables
     });
   };
@@ -311,55 +329,32 @@ const ConfigStation = props => {
               </Col>
             ))}
           </Row>
-          <label>Training:</label>
-          <Mutation
-            mutation={gql`
-              mutation SetTraining(
-                $stationSetID: ID!
-                $stationName: String!
-                $training: String!
-              ) {
-                setStationTraining(
-                  stationSetID: $stationSetID
-                  stationName: $stationName
-                  training: $training
-                )
-              }
-            `}
-          >
-            {action => (
-              <Fragment>
-                <Button
-                  size="sm"
-                  color="warning"
-                  onClick={() =>
-                    action({
-                      variables: {
-                        stationSetID: selectedStationSet,
-                        stationName: station.name,
-                        training: ""
-                      }
-                    })
-                  }
-                >
-                  Clear Training
-                </Button>
-                <FileExplorer
-                  directory="/Training"
-                  selectedFiles={[station.training]}
-                  onClick={(evt, container) =>
-                    action({
-                      variables: {
-                        stationSetID: selectedStationSet,
-                        stationName: station.name,
-                        training: container.fullPath
-                      }
-                    })
-                  }
-                />
-              </Fragment>
-            )}
-          </Mutation>
+          <TrainingConfig
+            selectedStationSet={selectedStationSet}
+            station={station}
+          />
+          <AmbianceConfig
+            selectedStationSet={selectedStationSet}
+            station={station}
+          />
+          <div>
+            <label>Layout:</label>
+            <select
+              onChange={setStationLayout}
+              value={station.layout || ""}
+              name="layout"
+              className="c-select form-control"
+            >
+              <option value="">Simulator Layout</option>
+              {Layouts.map(e => {
+                return (
+                  <option key={e} value={e}>
+                    {e}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
       </div>
     </Container>

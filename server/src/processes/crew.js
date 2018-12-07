@@ -23,6 +23,7 @@ function moveCrew() {
   App.flights.filter(f => f.running === true).forEach(f => {
     f.simulators.forEach(s => {
       const crew = App.crew.filter(c => c.simulatorId === s);
+      if (crew.length === 0) return;
       const decks = App.decks.filter(c => c.simulatorId === s);
       const teams = App.teams.filter(c => c.simulatorId === s);
       if (!crew || !decks) return;
@@ -34,10 +35,13 @@ function moveCrew() {
 
       // Start with moving team members
       const teamCrewNeedingMoving = teams.reduce((prev, next) => {
-        const location = App.rooms.find(d => d.id === next.location);
+        const location =
+          App.rooms.find(d => d.id === next.location) ||
+          App.decks.find(d => d.id === next.location);
         const deck = App.decks.find(
           d => d.id === (location ? location.deckId : next.location)
         );
+        if (!deck) return prev;
         if (allowedDecks.indexOf(deck.id) === -1) return prev;
         next.officers.forEach(o => {
           const c = crew.find(cc => cc.id === o);

@@ -49,3 +49,5 @@ import "./thx.js";
 import "./thorium.js";
 import "./railgun.js";
 import "./jumpDrive.js";
+import "./tasks";
+import "./environment";

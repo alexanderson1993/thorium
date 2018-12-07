@@ -211,9 +211,9 @@ class Sensors extends Component {
   render() {
     if (this.props.data.loading || !this.props.data.sensors)
       return <p>Loading...</p>;
-    const needScans = !this.props.station.cards.find(
-      c => c.component === "SensorScans"
-    );
+    const needScans =
+      !this.props.widget &&
+      !this.props.station.cards.find(c => c.component === "SensorScans");
     const sensors = this.props.data.sensors[0];
     const { pingMode } = sensors;
     const pings = false;
@@ -254,18 +254,18 @@ class Sensors extends Component {
                   Show Weapons Range
                 </Button>
                 {/*<Row>
-			<Col className="col-sm-12">
-			<h4>Contact Coordinates</h4>
-			</Col>
-			<Col className="col-sm-12">
-			<Card>
-			<p>X:</p>
-			<p>Y:</p>
-			<p>Z:</p>
-			</Card>
-			</Col>
-			</Row>
-		*/}
+                  <Col className="col-sm-12">
+                  <h4>Contact Coordinates</h4>
+                  </Col>
+                  <Col className="col-sm-12">
+                  <Card>
+                  <p>X:</p>
+                  <p>Y:</p>
+                  <p>Z:</p>
+                  </Card>
+                  </Col>
+                  </Row>
+                */}
               </Col>
             )}
             <Col
@@ -303,6 +303,13 @@ class Sensors extends Component {
                       segments={sensors.segments}
                       interference={sensors.interference}
                       mouseDown={this.clickContact(action)}
+                      includeTypes={[
+                        "contact",
+                        "planet",
+                        "border",
+                        "ping",
+                        "projectile"
+                      ]}
                       range={
                         weaponsRange && {
                           size: weaponsRange,

@@ -1,5 +1,4 @@
 .core-default {
-  margin-right: 20px;
   display: grid;
   height: calc(100vh - 26px);
   grid-template-columns: 120px 60px 180px 1fr 1fr 300px 15%;
@@ -7,12 +6,12 @@
   grid-template-areas:
     "engineControl engineControl  navigation     sensors       sensors     shortRange            systems"
     "thrusters     thrusters      navigation     sensors       sensors     shortRange            systems"
-    "thrusters thrusters          docking     sensors       sensors     shortRange            systems"
-    "targeting     targeting      targeting      sensors       sensors     longRange             systems"
-    "phaser        torpedo        torpedo        sensorScans   messageSending     internalComm         systems"
-    "shields       shields        shields        sensorScans   messageSending   damageReports   damageReports"
-    "shields       shields        shields        extras   remote   damageReports   damageReports"
-    "reactor       reactor        heat   actions   remote   damageReports   damageReports";
+    "thrusters     thrusters      docking        sensors       sensors     shortRange            systems"
+    "targeting     targeting      targeting      sensors       sensors     commConvo             systems"
+    "phaser        torpedo        torpedo        sensorScans   nothing   internalComm         systems"
+    "shields       shields        shields        sensorScans   nothing   damageReports   damageReports"
+    "shields       shields        shields        extras        remote      damageReports   damageReports"
+    "reactor       reactor        heat           actions       remote      damageReports   damageReports";
 
   & > div {
     overflow: hidden;
@@ -96,5 +95,8 @@
   }
   .ExtrasCore {
     grid-area: extras;
+  }
+  .CommConvoCore {
+    grid-area: commConvo;
   }
 }

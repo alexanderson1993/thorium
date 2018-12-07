@@ -27,6 +27,12 @@ export const JumpDriveMutations = {
   },
   fluxJumpdriveSector(root, args, context) {
     App.handleEvent(args, "fluxJumpdriveSector", context);
+  },
+  setJumpDriveEnabled(root, args, context) {
+    App.handleEvent(args, "setJumpDriveEnabled", context);
+  },
+  hitJumpDriveStress(root, args, context) {
+    App.handleEvent(args, "hitJumpDriveStress", context);
   }
 };
 

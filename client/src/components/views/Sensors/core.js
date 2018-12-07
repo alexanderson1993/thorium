@@ -70,7 +70,7 @@ class SensorsCore extends Component {
       evt.preventDefault();
       const index = parseInt(evt.code.substr(-1, 1), 10);
       if (!isNaN(index)) {
-        const data = index === 0 ? ScanPresets[10] : ScanPresets[index - 1];
+        const data = index === 0 ? ScanPresets()[10] : ScanPresets()[index - 1];
         this.scanPreset({ target: { value: data.value } });
       }
     }
@@ -151,15 +151,16 @@ class SensorsCore extends Component {
       dataField
     });
   };
-  probeData = probe => {
+  probeData = (probe, flash) => {
     const mutation = gql`
-      mutation ProbeData($id: ID!, $data: String!) {
-        probeProcessedData(id: $id, data: $data)
+      mutation ProbeData($id: ID!, $data: String!, $flash: Boolean) {
+        probeProcessedData(id: $id, data: $data, flash: $flash)
       }
     `;
     const variables = {
       id: probe.id,
-      data: this.state.dataField
+      data: this.state.dataField,
+      flash
     };
     this.props.client.mutate({
       mutation,
@@ -344,7 +345,7 @@ class SensorsCore extends Component {
               <option value={"answers"} disabled>
                 Answers
               </option>
-              {ScanPresets.map(p => (
+              {ScanPresets(this.state.domain).map(p => (
                 <option key={p.label} value={p.value}>
                   {p.label}
                 </option>
@@ -388,6 +389,14 @@ class SensorsCore extends Component {
               size={"sm"}
             >
               Probe Data
+            </Button>
+            <Button
+              onClick={() => this.probeData(probes, true)}
+              style={{ flexGrow: 2 }}
+              color="warning"
+              size={"sm"}
+            >
+              Flash & Send Probe Data
             </Button>
           </div>
         </div>

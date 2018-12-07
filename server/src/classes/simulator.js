@@ -74,6 +74,11 @@ class Ship {
     this.extraSystems = [];
     const codes = params.remoteAccessCodes || [];
     codes.forEach(c => this.remoteAccessCodes.push(new RemoteAccess(c)));
+
+    // Inventory Logs
+    this.inventoryLogs = params.inventoryLogs
+      ? params.inventoryLogs.concat()
+      : [];
   }
 }
 
@@ -89,7 +94,7 @@ class Assets {
 }
 
 export default class Simulator {
-  constructor(params) {
+  constructor(params = {}) {
     this.id = params.id || uuid.v4();
     this.name = params.name || "Simulator";
     this.layout = params.layout || "LayoutDefault";
@@ -99,7 +104,7 @@ export default class Simulator {
     this.template = params.template || false;
     this.templateId = params.templateId || null;
     this.class = "Simulator";
-    this.assets = new Assets(params.assets);
+    this.assets = new Assets({ ...params.assets });
     this.stationSet = params.stationSet || null;
     this.stations = [];
     this.exocomps = params.exocomps || 0;
@@ -110,12 +115,12 @@ export default class Simulator {
       params.bridgeOfficerMessaging === false ? false : true;
     this.teams = [];
     this.training = params.training || false;
-    this.ship = new Ship(params.ship);
+    this.ship = new Ship({ ...params.ship });
     this.panels = params.panels || [];
     params.stations &&
       params.stations.forEach(s => this.stations.push(new Station(s)));
     // Effects Control
-    this.lighting = new Lighting(params.lighting);
+    this.lighting = new Lighting({ ...params.lighting });
     this.ambiance = [];
     if (params.ambiance)
       params.ambiance.forEach(a => this.ambiance.push(new Ambiance(a)));

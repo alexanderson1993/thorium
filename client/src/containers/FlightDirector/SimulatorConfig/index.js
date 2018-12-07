@@ -117,9 +117,11 @@ stationSets {
     name
     description
     training
+    ambiance
     login
     executive
     messageGroups
+    layout
     widgets
     cards {
       name
@@ -147,10 +149,12 @@ const STATIONSET_SUB = gql`
         name
         description
         training
+        ambiance
         login
         messageGroups
         executive
         widgets
+        layout
         cards {
           name
           component

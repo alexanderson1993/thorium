@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { Container, Button } from "reactstrap";
+import "./credits.scss";
 
 const creditList = [
   {
@@ -31,9 +32,13 @@ const creditList = [
     content: "Nathan King 👑"
   },
   {
+    header: "Epsilon Design",
+    content: "Inspired by the Empty Epsilon Bridge Simulator"
+  },
+  {
     header: "Code Contributors",
     content: (
-      <ul style={{ listStyle: "none" }}>
+      <ul>
         <li>
           <code>G33kX</code>
         </li>
@@ -52,13 +57,16 @@ const creditList = [
         <li>
           <code>J-F1</code>
         </li>
+        <li>
+          <code>ericman314</code>
+        </li>
       </ul>
     )
   },
   {
     header: "Bug Reports & Feature Suggestions",
     content: (
-      <ul style={{ listStyle: "none" }}>
+      <ul>
         <li>Ryan Anderson</li>
         <li>Alex DeBirk</li>
         <li>James Porter</li>
@@ -70,16 +78,16 @@ const creditList = [
         <li>Natalie Anderson</li>
         <li>Tabitha Long</li>
         <li>Bracken Funk</li>
-        <li>
-          <code>kimballfrank</code>
-        </li>
+        <li>Kimball Frank</li>
+        <li>Nathan Young</li>
+        <li>Jensen Caldwell</li>
       </ul>
     )
   },
   {
     header: "Donors",
     content: (
-      <ul style={{ listStyle: "none" }}>
+      <ul>
         <li>
           Thomas Delclite{" "}
           <span role="img" aria-label="donor-tag">
@@ -111,7 +119,7 @@ const creditList = [
           </span>
         </li>
         <li>
-          The Christa McAuliffe Space Education Center{" "}
+          The Christa McAuliffe Space Center{" "}
           <span role="img" aria-label="donor-tag">
             🛰
           </span>
@@ -126,6 +134,12 @@ const creditList = [
           Ryan Anderson
           <span role="img" aria-label="donor-tag">
             🔭
+          </span>
+        </li>
+        <li>
+          Nathan Young
+          <span role="img" aria-label="donor-tag">
+            🇺🇸
           </span>
         </li>
       </ul>
@@ -159,6 +173,21 @@ const creditList = [
 
 class Credits extends Component {
   state = { debug: false, scroll: 0 };
+  componentDidMount() {
+    fetch("https://api.github.com/repos/thorium-sim/thorium-kiosk/releases")
+      .then(res => res.json())
+      .then(res => {
+        const release = res[0];
+        console.log(release);
+        const mac = release.assets.find(a => a.name.indexOf("mac.zip") > -1)
+          .browser_download_url;
+        const win = release.assets.find(a => a.name.indexOf(".exe") > -1)
+          .browser_download_url;
+        const linux = release.assets.find(a => a.name.indexOf("AppImage") > -1)
+          .browser_download_url;
+        this.setState({ mac, win, linux });
+      });
+  }
   toggleDebug = () => {
     this.setState({
       debug: !this.state.debug
@@ -173,6 +202,7 @@ class Credits extends Component {
   };
   render() {
     const { clientId, flight = {}, simulator = {}, station = {} } = this.props;
+    const { mac, win, linux } = this.state;
     if (this.refs.scroll) {
       this.refs.scroll.scrollTop = this.state.scroll;
     }
@@ -197,33 +227,28 @@ class Credits extends Component {
               <h5>Flight: {flight ? flight.name : "Not Assigned"}</h5>
               <h5>Simulator: {simulator ? simulator.name : "Not Assigned"}</h5>
               <h5>Station: {station ? station.name : "Not Assigned"}</h5>
-              <h5>Download the client app: </h5>
-              <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                <li>
-                  <a
-                    download="Thorium.zip"
-                    href="https://github.com/Thorium-Sim/thorium-kiosk/releases/download/v1.0.3/thorium-client-1.0.3-mac.zip"
-                  >
-                    Mac
-                  </a>
-                </li>
-                <li>
-                  <a
-                    download="Thorium.zip"
-                    href="https://github.com/Thorium-Sim/thorium-kiosk/releases/download/v1.0.3/thorium-client-setup-1.0.3.exe"
-                  >
-                    Windows
-                  </a>
-                </li>
-                <li>
-                  <a
-                    download="Thorium.zip"
-                    href="https://github.com/Thorium-Sim/thorium-kiosk/releases/download/v1.0.3/thorium-client-1.0.3-x86_64.AppImage"
-                  >
-                    Linux
-                  </a>
-                </li>
-              </ul>
+              {mac && (
+                <React.Fragment>
+                  <h5>Download the client app: </h5>
+                  <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                    <li>
+                      <a download="Thorium.zip" href={mac}>
+                        Mac
+                      </a>
+                    </li>
+                    <li>
+                      <a download="Thorium.zip" href={win}>
+                        Windows
+                      </a>
+                    </li>
+                    <li>
+                      <a download="Thorium.zip" href={linux}>
+                        Linux
+                      </a>
+                    </li>
+                  </ul>
+                </React.Fragment>
+              )}
             </div>
           ) : (
             <div ref="scroll" className="scroll">

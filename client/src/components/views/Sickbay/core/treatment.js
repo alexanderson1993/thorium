@@ -4,6 +4,8 @@ import gql from "graphql-tag";
 import { Button } from "reactstrap";
 import { TypingField } from "../../../generic/core";
 import { titleCase } from "change-case";
+import HashtagDefinition from "helpers/hashtagDefinition";
+
 class Treatment extends Component {
   constructor(props) {
     super(props);
@@ -57,23 +59,7 @@ class Treatment extends Component {
             }}
             value={treatment}
           />
-          <small style={{ flex: 3, display: "inline-block" }}>
-            You can use some hashtags to make your report dynamic:
-            <ul>
-              <li>
-                <strong>#COLOR</strong> - a random color of red, green, blue,
-                yellow
-              </li>
-              <li>
-                <strong>#[1 - 2]</strong> - a random whole number between the
-                two listed numbers
-              </li>
-              <li>
-                <strong>#["string1", "string2", "string3", etc.]</strong> - a
-                random string from the list provided
-              </li>
-            </ul>
-          </small>
+          <HashtagDefinition />
         </div>
         <div style={{ display: "flex" }}>
           <Mutation
@@ -117,21 +103,6 @@ class Treatment extends Component {
             value={[]}
             onChange={this.loadReport}
           />
-
-          {/* <select
-        value={"answers"}
-        onChange={this.scanPreset}
-        style={{ flexGrow: 4, maxWidth: 100 }}
-      >
-        <option value={"answers"} disabled>
-          Answers
-        </option>
-        {ScanPresets.map(p => (
-          <option key={p.label} value={p.value}>
-            {p.label}
-          </option>
-        ))}
-      </select> */}
         </div>
       </Fragment>
     );

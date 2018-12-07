@@ -25,7 +25,9 @@ stations {
   name
   login
   training
+  ambiance
   executive
+  layout
   messageGroups
   widgets
   cards {
