@@ -14,7 +14,8 @@ App.on("addTask", ({ taskInput, simulatorId }) => {
     station: task.station,
     title: `New Task`,
     body: `${task.values.name || task.definition}`,
-    color: "info"
+    color: "info",
+    relevantCards: ["Tasks", "tasks"]
   });
   pubsub.publish("widgetNotify", {
     widget: "tasks",
@@ -31,6 +32,20 @@ App.on("verifyTask", ({ taskId, dismiss }) => {
   const task = App.tasks.find(t => t.id === taskId);
   if (task) {
     task.verify(dismiss);
+
+    let publish = false;
+    // Find any task reports that have assigned this task
+    App.taskReports.forEach(t =>
+      t.tasks.forEach(reportTask => {
+        if (reportTask.assigned === taskId) {
+          reportTask.verify();
+          publish = true;
+        }
+      })
+    );
+    if (publish) {
+      pubsub.publish("taskReportUpdate", App.taskReports);
+    }
     pubsub.publish(
       "tasksUpdate",
       App.tasks.filter(s => s.simulatorId === task.simulatorId)
@@ -90,13 +105,15 @@ App.on("denyTaskVerify", ({ id }) => {
     station: task.station,
     title: `Task Verification Failed`,
     body: task.values.name || task.definition,
-    color: "warning"
+    color: "warning",
+    relevantCards: ["Tasks", "tasks"]
   });
 });
 
-App.on("addTaskTemplate", ({ id, definition }) => {
+App.on("addTaskTemplate", ({ id = uuid.v4(), definition, cb }) => {
   App.taskTemplates.push(new Classes.TaskTemplate({ id, definition }));
   pubsub.publish("taskTemplatesUpdate", App.taskTemplates);
+  cb(id);
 });
 
 App.on("removeTaskTemplate", ({ id }) => {
@@ -113,5 +130,17 @@ App.on("renameTaskTemplate", ({ id, name }) => {
 App.on("setTaskTemplateValues", ({ id, values }) => {
   const task = App.taskTemplates.find(t => t.id === id);
   task && task.setValues(values);
+  pubsub.publish("taskTemplatesUpdate", App.taskTemplates);
+});
+
+App.on("setTaskTemplateReportTypes", ({ id, reportTypes }) => {
+  const task = App.taskTemplates.find(t => t.id === id);
+  task && task.setReportTypes(reportTypes);
+  pubsub.publish("taskTemplatesUpdate", App.taskTemplates);
+});
+
+App.on("setTaskTemplateMacros", ({ id, macros }) => {
+  const task = App.taskTemplates.find(t => t.id === id);
+  task && task.setMacros(macros);
   pubsub.publish("taskTemplatesUpdate", App.taskTemplates);
 });

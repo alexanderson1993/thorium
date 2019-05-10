@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Row, Col, Container } from "reactstrap";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 import Measure from "react-measure";
 import Tour from "helpers/tourHelper";
@@ -458,7 +458,7 @@ class Targeting extends Component {
               targetSystem={this.targetSystem}
             />
           </Col>
-          <Col sm={5} className="torpedos">
+          <Col sm={5} className="torpedos" style={{ height: "100%" }}>
             <TorpedoLoading
               simulator={this.props.simulator}
               maxLaunchers={-200}

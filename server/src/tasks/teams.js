@@ -61,8 +61,6 @@ export default [
         value: () => "Repair any damage that you find."
       },
       room: {
-        // TODO: Extend so it allows a system input and pulls the system's
-        // locations for the room default
         input: ({ simulator }) => (simulator ? "roomPicker" : "text"),
         value: ({ simulator }) =>
           simulator
@@ -90,7 +88,14 @@ export default [
 
     instructions({
       simulator,
-      requiredValues: { preamble, teamName, orders, room: roomId, officers },
+      requiredValues: {
+        preamble,
+        teamName,
+        orders,
+        room: roomId,
+        officers,
+        system
+      },
       task = {}
     }) {
       // Make sure it supports systems as well
@@ -102,12 +107,14 @@ export default [
         .join("\n");
       const room = App.rooms.find(r => r.id === roomId);
       const deck = App.decks.find(d => d.id === (room ? room.deckId : roomId));
+      const decks = App.decks.find(d => d.simulatorId === simulator.id);
+      const randomDeck = randomFromList(decks);
       const location =
         !room && !deck
-          ? "All Decks"
+          ? `Deck ${randomDeck ? randomDeck.number : 1}`
           : room
-            ? `${room.name}, Deck ${deck.number}`
-            : `Deck ${deck.number}`;
+          ? `${room.name}, Deck ${deck.number}`
+          : `Deck ${deck.number}`;
       const text = `Team Name: ${teamName}
 Location: ${location}
 Officers:
@@ -119,7 +126,8 @@ Orders: ${orders}`;
 
 ${text}`,
           {
-            simulator
+            simulator,
+            system
           }
         );
       return reportReplace(
@@ -129,12 +137,72 @@ ${text}`,
             : "person in charge of damage teams"
         } to create the following damage team work order:
 ${text}`,
-        { simulator }
+        { simulator, system }
       );
     },
     verify({ simulator, requiredValues }) {
       // It requires text entry, so manual verification
       return false;
+    }
+  },
+  {
+    name: "Wait For Team To Clear",
+    class: "Teams",
+    active() {
+      return true;
+    },
+    stations({ simulator }) {
+      return (
+        simulator &&
+        simulator.stations.filter(s =>
+          s.cards.find(c => c.component === "DamageTeams")
+        )
+      );
+    },
+    values: {
+      preamble: {
+        input: () => "textarea",
+        value: () => "A damage team needs to be sent to perform some repairs."
+      },
+      teamName: {
+        input: () => "text",
+        value: () => "Repair Team"
+      }
+    },
+
+    instructions({
+      simulator,
+      requiredValues: { preamble, teamName, system },
+      task = {}
+    }) {
+      // Make sure it supports systems as well
+      const station = simulator.stations.find(s =>
+        s.cards.find(c => c.component === "DamageTeams")
+      );
+
+      if (station && task.station === station.name)
+        return reportReplace(
+          `${preamble} Wait for the team named "${teamName}" to disappear from your list of teams.`,
+
+          {
+            simulator,
+            system
+          }
+        );
+      return reportReplace(
+        `${preamble} Ask the ${
+          station ? `${station.name} Officer` : "person in charge of teams"
+        } to wait for the team named "${teamName}" to disappear from their list of teams.`,
+        { simulator, system }
+      );
+    },
+    verify({ simulator, requiredValues: { teamName } }) {
+      const team = App.teams.find(
+        t =>
+          t.name.toLowerCase() === teamName.toLowerCase() &&
+          t.simulatorId === simulator.id
+      );
+      return team && team.cleared;
     }
   },
   {
@@ -189,7 +257,14 @@ ${text}`,
 
     instructions({
       simulator,
-      requiredValues: { preamble, teamName, orders, room: roomId, officers },
+      requiredValues: {
+        preamble,
+        teamName,
+        orders,
+        room: roomId,
+        officers,
+        system
+      },
       task = {}
     }) {
       // Make sure it supports systems as well
@@ -198,12 +273,14 @@ ${text}`,
       );
       const room = App.rooms.find(r => r.id === roomId);
       const deck = App.decks.find(d => d.id === (room ? room.deckId : roomId));
+      const decks = App.decks.find(d => d.simulatorId === simulator.id);
+      const randomDeck = randomFromList(decks);
       const location =
         !room && !deck
-          ? "All Decks"
+          ? `Deck ${randomDeck ? randomDeck.number : 1}`
           : room
-            ? `${room.name}, Deck ${deck.number}`
-            : `Deck ${deck.number}`;
+          ? `${room.name}, Deck ${deck.number}`
+          : `Deck ${deck.number}`;
       const text = `Team Name: ${teamName}
 Location: ${location}
 Orders: ${orders}`;
@@ -213,7 +290,8 @@ Orders: ${orders}`;
 
 ${text}`,
           {
-            simulator
+            simulator,
+            system
           }
         );
       return reportReplace(
@@ -223,7 +301,7 @@ ${text}`,
             : "person in charge of security teams"
         } to create the following security team:
 ${text}`,
-        { simulator }
+        { simulator, system }
       );
     },
     verify({ simulator, requiredValues }) {
@@ -284,7 +362,7 @@ ${text}`,
 
     instructions({
       simulator,
-      requiredValues: { preamble, teamName, orders, room: roomId },
+      requiredValues: { preamble, teamName, orders, room: roomId, system },
       task = {}
     }) {
       // Make sure it supports systems as well
@@ -293,12 +371,14 @@ ${text}`,
       );
       const room = App.rooms.find(r => r.id === roomId);
       const deck = App.decks.find(d => d.id === (room ? room.deckId : roomId));
+      const decks = App.decks.find(d => d.simulatorId === simulator.id);
+      const randomDeck = randomFromList(decks);
       const location =
         !room && !deck
-          ? "All Decks"
+          ? `Deck ${randomDeck ? randomDeck.number : 1}`
           : room
-            ? `${room.name}, Deck ${deck.number}`
-            : `Deck ${deck.number}`;
+          ? `${room.name}, Deck ${deck.number}`
+          : `Deck ${deck.number}`;
       const text = `Team Name: ${teamName}
 Location: ${location}
 Orders: ${orders}`;
@@ -308,7 +388,8 @@ Orders: ${orders}`;
 
 ${text}`,
           {
-            simulator
+            simulator,
+            system
           }
         );
       return reportReplace(
@@ -318,7 +399,7 @@ ${text}`,
             : "person in charge of medical teams"
         } to create the following medical team:
 ${text}`,
-        { simulator }
+        { simulator, system }
       );
     },
     verify({ simulator, requiredValues }) {

@@ -23,7 +23,7 @@ const efficiencies = [
     efficiency: 0.5
   },
   {
-    label: "Auxilliary",
+    label: "Auxiliary",
     color: "info",
     efficiency: 0.38
   },
@@ -54,11 +54,7 @@ export default class Reactor extends HeatMixin(System) {
     this.powerOutput = params.powerOutput || 120;
     this.efficiency = params.efficiency || 1;
     this.efficiencies = params.efficiencies || [...efficiencies];
-    this.externalPower = !this.efficiencies.find(
-      e => !e.efficiency && e.efficiency !== 0
-    )
-      ? false
-      : params.externalPower || true;
+    this.externalPower = false;
     this.batteryChargeLevel = params.batteryChargeLevel || 1;
     this.batteryChargeRate = params.batteryChargeRate || 1 / 1000;
     this.depletion = params.depletion || 0;
@@ -68,6 +64,8 @@ export default class Reactor extends HeatMixin(System) {
       this.heatRate = null;
     }
 
+    this.requireBalance = params.requireBalance || true;
+
     // For Dilithium Stress
     const alpha = Math.round(Math.random() * 100);
     const beta = Math.round(Math.random() * 100);
@@ -76,6 +74,7 @@ export default class Reactor extends HeatMixin(System) {
     this.alphaTarget = params.alphaTarget || alpha;
     this.betaTarget = params.betaTarget || beta;
     this.alerted = params.alerted || false;
+    this.dilithiumRate = params.dilithiumRate || 1;
   }
   get stealthFactor() {
     if (this.ejected) return 0;
@@ -117,5 +116,11 @@ export default class Reactor extends HeatMixin(System) {
     if (betaLevel || betaLevel === 0) this.betaLevel = betaLevel;
     if (alphaTarget || alphaTarget === 0) this.alphaTarget = alphaTarget;
     if (betaTarget || betaTarget === 0) this.betaTarget = betaTarget;
+  }
+  setDilithiumRate(rate) {
+    this.dilithiumRate = rate;
+  }
+  setRequireBalance(tf) {
+    this.requireBalance = tf;
   }
 }

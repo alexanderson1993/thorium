@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { withApollo } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { Widgets } from "components/views";
 import { Tooltip } from "reactstrap";
 import FontAwesome from "react-fontawesome";
@@ -86,6 +86,7 @@ class WidgetsContainer extends Component {
     // return null;
     return (
       <div
+        style={{ zIndex: 500000 }}
         className={`widgets ${clientObj.loginState} ${
           clientObj.offlineState ? "offline" : ""
         }`}

@@ -8,8 +8,9 @@ import {
 import * as damageStepFunctions from "./damageReports/functions";
 import processReport from "./processReport";
 import DamageStep from "./damageStep";
+import DamageTask from "./damageTask";
 
-class Damage {
+export class Damage {
   constructor(params = {}) {
     this.damaged = params.damaged || false;
     this.report = params.report || null;
@@ -53,6 +54,10 @@ export class System {
       params.optionalDamageSteps.forEach(s =>
         this.optionalDamageSteps.push(new DamageStep(s))
       );
+    // Task-based damage reports
+    this.damageTasks = [];
+    params.damageTasks &&
+      params.damageTasks.forEach(s => this.damageTasks.push(new DamageTask(s)));
   }
   get stealthFactor() {
     return null;
@@ -79,7 +84,7 @@ export class System {
   setDefaultPowerLevel(level) {
     this.power.defaultLevel = level;
   }
-  break(report, destroyed, which) {
+  break(report, destroyed, which = "default") {
     this.damage.damaged = true;
     if (destroyed) this.damage.destroyed = true;
     this.damage.report = processReport(report, this);
@@ -120,6 +125,12 @@ export class System {
       .map(c => c.position)
       .filter(c => damagePositions.indexOf(c) > -1)
       .filter((c, i, a) => a.indexOf(c) === i);
+    const damageTeamCrewCount = crew
+      .filter(c => damagePositions.indexOf(c.position) > -1)
+      .reduce((prev, next) => {
+        prev[next.position] = prev[next.position] ? prev[next.position] + 1 : 1;
+        return prev;
+      }, {});
     const securityTeamCrew = crew
       .map(c => c.position)
       .filter(c => c.indexOf("Security") > -1);
@@ -303,13 +314,24 @@ export class System {
     const location = room
       ? `${room.name}, Deck ${deck.number}`
       : deck
-        ? `Deck ${deck.number}`
-        : randomLocation
-          ? `${randomLocation.name}, Deck ${randomLocationDeck.number}`
-          : "None";
+      ? `Deck ${deck.number}`
+      : randomLocation
+      ? `${randomLocation.name}, Deck ${randomLocationDeck.number}`
+      : "None";
     // First create our context object
     const context = Object.assign(
-      { damageSteps, simulator: sim, stations, deck, room, location, crew },
+      {
+        damageSteps,
+        simulator: sim,
+        stations,
+        deck,
+        room,
+        location,
+        crew,
+        damageTeamCrew,
+        damageTeamCrewCount,
+        securityTeamCrew
+      },
       this
     );
     const damageReport = damageSteps
@@ -359,5 +381,21 @@ ${report}
     this.damage.reactivationRequester = null;
     // For now, lets repair the station when it is accepted
     if (response) this.repair();
+  }
+  // Damage Tasks
+  // As a side note, can I just say how much more elegant
+  // the damage tasks system is already? Look at this!
+  // It's much simpler. Why didn't I do it this
+  // way in the first place? ~A
+  addDamageTask(task) {
+    if (!task || !task.id || this.damageTasks.find(t => t.id === task.id))
+      return;
+    this.damageTasks.push(new DamageTask(task));
+  }
+  updateDamageTask(task) {
+    this.damageTasks.find(t => t.id === task.id).update(task);
+  }
+  removeDamageTask(id) {
+    this.damageTasks = this.damageTasks.filter(t => t.id !== id);
   }
 }

@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Label, Input, FormGroup } from "reactstrap";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import HashtagDefinition from "../../../../../../helpers/hashtagDefinition";
 
 export default class GenericConfig extends Component {
@@ -36,7 +36,10 @@ export default class GenericConfig extends Component {
       step: {
         id,
         args: {
-          [which]: evt.target.value
+          [which]:
+            evt.target.checked || evt.target.checked === false
+              ? evt.target.checked
+              : evt.target.value
         }
       }
     };

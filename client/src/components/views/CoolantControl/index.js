@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { Container, Row, Button } from "reactstrap";
 import { graphql, withApollo } from "react-apollo";
 import FontAwesome from "react-fontawesome";
@@ -15,6 +15,7 @@ const COOLANT_SUB = gql`
     coolantUpdate(simulatorId: $simulatorId) {
       id
       name
+      displayName
       coolant
       coolantRate
       damage {
@@ -34,6 +35,7 @@ const COOLANT_SYSTEM_SUB = gql`
       systemId
       simulatorId
       name
+      displayName
       type
       coolant
       coolantRate
@@ -166,11 +168,17 @@ const trainingSteps = [
   }
 ];
 
-const CoolantBar = ({ systemId, name, coolant, transferCoolant }) => {
+const CoolantBar = ({
+  systemId,
+  name,
+  displayName,
+  coolant,
+  transferCoolant
+}) => {
   return (
     <div>
       <div className="coolant-bar">
-        <p>{name}</p>
+        <p>{displayName || name}</p>
         <CoolantLeftBracket />
         <CoolantMiddleBar />
         <div
@@ -255,6 +263,7 @@ const COOLANT_QUERY = gql`
     coolant(simulatorId: $simulatorId) {
       id
       name
+      displayName
       coolant
       coolantRate
       damage {
@@ -269,6 +278,7 @@ const COOLANT_QUERY = gql`
       systemId
       simulatorId
       name
+      displayName
       type
       coolant
       coolantRate

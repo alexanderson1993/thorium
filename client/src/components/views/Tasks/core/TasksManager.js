@@ -2,7 +2,7 @@ import React, { Component, Fragment } from "react";
 import { Card, Button, ListGroup, ListGroupItem } from "reactstrap";
 import { Duration } from "luxon";
 import { Mutation } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { titleCase } from "change-case";
 
 export function parseDuration(time) {
@@ -172,6 +172,28 @@ class TasksManager extends Component {
                         </Button>
                       )}
                     </Mutation>
+                    {task.verifyRequested && (
+                      <Mutation
+                        mutation={gql`
+                          mutation RejectTask($taskId: ID!) {
+                            denyTaskVerify(id: $taskId)
+                          }
+                        `}
+                        variables={{ taskId: task.id }}
+                      >
+                        {action => (
+                          <Button
+                            size="sm"
+                            color="danger"
+                            onClick={() => {
+                              action();
+                            }}
+                          >
+                            Reject
+                          </Button>
+                        )}
+                      </Mutation>
+                    )}
                   </Fragment>
                 )}
               </Fragment>

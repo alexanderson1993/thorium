@@ -8,22 +8,22 @@ App.on("updateViewscreenName", ({ id, name }) => {
 });
 App.on(
   "updateViewscreenComponent",
-  ({ id, simulatorId, component, data, secondary = false }) => {
+  ({ id, simulatorId, component, data, secondary = false, context }) => {
     const viewscreens = App.viewscreens.filter(
       v =>
-        (v.id === id || v.simulatorId === simulatorId) &&
-        v.secondary === secondary
+        v.id === id ||
+        (v.simulatorId === simulatorId && v.secondary === secondary)
     );
     if (viewscreens.length === 0) return;
+    const client = App.clients.find(c => c.id === viewscreens[0].id);
     // First de-auto the viewscreen, since we want to force this component;
-    const simulator = App.simulators.find(
-      s => s.id === viewscreens[0].simulatorId
-    );
+    const simulator = App.simulators.find(s => s.id === client.simulatorId) ||
+      context.simulator || { id: simulatorId };
     viewscreens.forEach(viewscreen => {
       viewscreen.updateAuto(false);
       viewscreen.updateComponent(
         component,
-        data ? data.replace(/#SIM/gi, simulator.name) : data
+        data ? data.replace(/#SIM/gi, simulator ? simulator.name : "") : data
       );
     });
     pubsub.publish("viewscreensUpdate", App.viewscreens);
@@ -44,8 +44,8 @@ App.on("updateViewscreenAuto", ({ id, simulatorId, auto }) => {
 App.on("setViewscreenToAuto", ({ id, simulatorId, secondary = false }) => {
   const viewscreen = App.viewscreens.filter(
     v =>
-      (v.id === id || v.simulatorId === simulatorId) &&
-      v.secondary === secondary
+      v.id === id ||
+      (v.simulatorId === simulatorId && v.secondary === secondary)
   );
   viewscreen.forEach(v => {
     v.updateAuto(true);

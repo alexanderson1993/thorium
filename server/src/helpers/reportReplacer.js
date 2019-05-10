@@ -3,6 +3,7 @@ import {
   randomFromList,
   partsList
 } from "../classes/generic/damageReports/constants";
+import getDamageSystem from "./getDamageSystem";
 
 function splice(str, start, delCount, newSubStr) {
   return (
@@ -11,6 +12,9 @@ function splice(str, start, delCount, newSubStr) {
 }
 
 export default function reportReplace(report = "", { system, simulator }) {
+  if (typeof system === "string") {
+    system = getDamageSystem(system) || { name: system };
+  }
   let returnReport = report;
   // #PART
   if (system && system.damage) system.damage.exocompParts = [];
@@ -42,7 +46,10 @@ export default function reportReplace(report = "", { system, simulator }) {
     const index = returnReport.indexOf(m);
     returnReport = returnReport.replace(m, "");
     const numbers = m.replace(/[ [\]#]/gi, "").split("-");
-    const num = Math.round(Math.random() * numbers[1] + numbers[0]);
+    const num = Math.round(
+      Math.random() * (parseInt(numbers[1], 10) - parseInt(numbers[0], 10)) +
+        parseInt(numbers[0], 10)
+    );
     returnReport = splice(returnReport, index, 0, num);
   });
 

@@ -1,8 +1,9 @@
 import React, { Component } from "react";
 import FontAwesome from "react-fontawesome";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { withApollo } from "react-apollo";
-import { subscribe } from "helpers/pubsub";
+import { subscribe, publish } from "helpers/pubsub";
+import uuid from "uuid";
 // Speech Handling
 const synth = window.speechSynthesis;
 const holderStyle = {
@@ -21,6 +22,7 @@ const NOTIFY_SUB = gql`
       type
       color
       duration
+      relevantCards
     }
   }
 `;
@@ -66,8 +68,9 @@ class Alerts extends Component {
             }
             if (speech[notify.type] !== false) {
               if (self.props.station.name === "Core" && self.props.speech) {
-                synth.cancel();
-                synth.speak(new SpeechSynthesisUtterance(notify.title));
+                synth && synth.cancel();
+                synth &&
+                  synth.speak(new SpeechSynthesisUtterance(notify.title));
               }
             }
           }
@@ -83,35 +86,38 @@ class Alerts extends Component {
         alerts: []
       });
     });
+    this.addSub = subscribe("triggerNotification", notification => {
+      this.trigger(notification);
+    });
   }
   componentWillUnmount() {
     this.sub && this.sub();
     this.subscription && this.subscription.unsubscribe();
+    this.addSub && this.addSub();
   }
-  trigger({ title, body, color, duration, id }) {
-    const alerts = this.state.alerts;
-    alerts.push(Object.assign({ title, body, color }, { visible: true }));
-    this.setState({
-      alerts
-    });
-    const timeoutDuration = duration ? duration : 5000;
+  trigger({ title, body, color, duration = 5000, id = uuid.v4() }) {
+    this.setState(state => ({
+      alerts: state.alerts.concat({ id, title, body, color, visible: true })
+    }));
     setTimeout(() => {
       this.onDismiss(id);
-    }, timeoutDuration);
+    }, duration);
   }
-  onDismiss = id => {
-    const alerts = this.state.alerts;
-    this.setState({
-      alerts: alerts.map(a => {
+  onDismiss = (id, changeToCard) => {
+    this.setState(state => ({
+      alerts: state.alerts.map(a => {
         if (a.id === id) a.visible = false;
         return a;
       })
-    });
+    }));
     setTimeout(() => {
-      this.setState({
-        alerts: this.state.alerts.filter(a => a.id !== id)
-      });
+      this.setState(state => ({
+        alerts: state.alerts.filter(a => a.id !== id)
+      }));
     }, 2000);
+    if (changeToCard) {
+      publish("cardChangeRequest", { changeToCard });
+    }
   };
   render() {
     return <AlertsHolder alerts={this.state.alerts} dismiss={this.onDismiss} />;
@@ -120,15 +126,17 @@ class Alerts extends Component {
 
 export const AlertsHolder = ({ alerts, dismiss }) => (
   <div style={holderStyle} className="alertsHolder">
-    {alerts.filter(a => a.visible).map(a => (
-      <AlertItem key={a.id} notify={a} dismiss={dismiss} />
-    ))}
+    {alerts
+      .filter(a => a.visible)
+      .map(a => (
+        <AlertItem key={a.id} notify={a} dismiss={dismiss} />
+      ))}
   </div>
 );
 
 const AlertItem = ({ dismiss, notify }) => {
   return (
-    <div onClick={() => dismiss(notify.id)}>
+    <div onClick={() => dismiss(notify.id, notify.relevantCards)}>
       <div className={`alert alert-${notify.color}`}>
         <h5 className="alert-heading">
           {notify.title}{" "}

@@ -6,7 +6,7 @@ import uuid from "uuid";
 // Simulator
 App.on(
   "createSimulator",
-  ({ id, name, template, flightId, timeline, stationSet }) => {
+  ({ id = uuid.v4(), name, template, flightId, timeline, stationSet }) => {
     const simulator = new Classes.Simulator({
       id,
       name,
@@ -115,6 +115,21 @@ App.on("removeSimulatorDamageStep", ({ simulatorId, step }) => {
   sim.removeDamageStep(step);
   pubsub.publish("simulatorsUpdate", App.simulators);
 });
+App.on("addSimulatorDamageTask", ({ simulatorId, task }) => {
+  const sim = App.simulators.find(s => s.id === simulatorId);
+  sim.addDamageTask(task);
+  pubsub.publish("simulatorsUpdate", App.simulators);
+});
+App.on("updateSimulatorDamageTask", ({ simulatorId, task }) => {
+  const sim = App.simulators.find(s => s.id === simulatorId);
+  sim.updateDamageTask(task);
+  pubsub.publish("simulatorsUpdate", App.simulators);
+});
+App.on("removeSimulatorDamageTask", ({ simulatorId, taskId }) => {
+  const sim = App.simulators.find(s => s.id === simulatorId);
+  sim.removeDamageTask(taskId);
+  pubsub.publish("simulatorsUpdate", App.simulators);
+});
 App.on("setSimulatorMission", ({ simulatorId, missionId }) => {
   const simulator = App.simulators.find(s => s.id === simulatorId);
   simulator.mission = missionId;
@@ -124,6 +139,26 @@ App.on("setSimulatorMission", ({ simulatorId, missionId }) => {
 App.on("updateSimulatorPanels", ({ simulatorId, panels }) => {
   const simulator = App.simulators.find(s => s.id === simulatorId);
   simulator.updatePanels(panels);
+  pubsub.publish("simulatorsUpdate", App.simulators);
+});
+App.on("updateSimulatorCommandLines", ({ simulatorId, commandLines }) => {
+  const simulator = App.simulators.find(s => s.id === simulatorId);
+  simulator.updateCommandLines(commandLines);
+  pubsub.publish("simulatorsUpdate", App.simulators);
+});
+App.on("updateSimulatorTriggers", ({ simulatorId, triggers }) => {
+  const simulator = App.simulators.find(s => s.id === simulatorId);
+  simulator.updateTriggers(triggers);
+  pubsub.publish("simulatorsUpdate", App.simulators);
+});
+App.on("updateSimulatorInterfaces", ({ simulatorId, interfaces }) => {
+  const simulator = App.simulators.find(s => s.id === simulatorId);
+  simulator.updateInterfaces(interfaces);
+  pubsub.publish("simulatorsUpdate", App.simulators);
+});
+App.on("setSimulatorTriggersPaused", ({ simulatorId, paused }) => {
+  const simulator = App.simulators.find(s => s.id === simulatorId);
+  simulator.setTriggersPaused(paused);
   pubsub.publish("simulatorsUpdate", App.simulators);
 });
 App.on("setStepDamage", ({ simulatorId, stepDamage }) => {
@@ -140,8 +175,31 @@ App.on("setVerifyDamage", ({ simulatorId, verifyStep }) => {
 const allowedMacros = [
   "updateViewscreenComponent",
   "setViewscreenToAuto",
-  "showViewscreenTactical"
+  "showViewscreenTactical",
+  "autoAdvance"
 ];
+App.on("triggerMacros", ({ simulatorId, macros }) => {
+  const simulator = App.simulators.find(s => s.id === simulatorId);
+  const flight = App.flights.find(f => f.simulators.indexOf(simulatorId) > -1);
+  const context = { simulator, flight };
+  macros.forEach(({ stepId, event, args, delay = 0 }) => {
+    if (stepId) {
+      simulator.executeTimelineStep(stepId);
+    }
+    setTimeout(() => {
+      const parsedArgs = typeof args === "string" ? JSON.parse(args) : args;
+      App.handleEvent(
+        {
+          ...parsedArgs,
+          simulatorId
+        },
+        event,
+        context
+      );
+    }, delay);
+  });
+  pubsub.publish("simulatorsUpdate", App.simulators);
+});
 
 App.on("autoAdvance", ({ simulatorId, prev }) => {
   const sim = App.simulators.find(s => s.id === simulatorId);
@@ -152,23 +210,20 @@ App.on("autoAdvance", ({ simulatorId, prev }) => {
   const timelineStep =
     missionObj.timeline[currentTimelineStep - (prev ? 2 : 0)];
   if (!timelineStep) return;
-  timelineStep.timelineItems
-    .filter(
-      t =>
-        executedTimelineSteps.indexOf(t.id) === -1 ||
-        allowedMacros.indexOf(t.event) > -1
-    )
-    .forEach(({ id, event, args, delay = 0 }) => {
-      sim.executeTimelineStep(id);
 
-      setTimeout(() => {
-        App.handleEvent(
-          Object.assign({ simulatorId }, JSON.parse(args)),
-          event
-        );
-      }, delay);
-    });
+  const macros = timelineStep.timelineItems.filter(t => {
+    if (executedTimelineSteps.indexOf(t.id) === -1) return true;
+    if (allowedMacros.indexOf(t.event) > -1) return true;
+    if (executedTimelineSteps.indexOf(t.id) > -1) return false;
+    return true;
+  });
+
+  macros.forEach(({ id }) => {
+    sim.executeTimelineStep(id);
+  });
+  App.handleEvent({ simulatorId, macros }, "triggerMacros");
   sim.setTimelineStep(currentTimelineStep + (prev ? -1 : 1));
+
   pubsub.publish("simulatorsUpdate", App.simulators);
 });
 App.on("setBridgeMessaging", ({ id, messaging }) => {
@@ -202,24 +257,27 @@ App.on("updateSimulatorLighting", ({ id, lighting }) => {
     }, duration);
   }
 });
-App.on("updateSimulatorAmbiance", ({ id, ambiance }) => {
+App.on("updateSimulatorAmbiance", ({ id, ambiance, cb }) => {
   const sim = App.simulators.find(s => s.id === id);
   sim.updateAmbiance(ambiance);
   pubsub.publish("simulatorsUpdate", App.simulators);
+  cb && cb();
 });
-App.on("addSimulatorAmbiance", ({ id, name }) => {
+App.on("addSimulatorAmbiance", ({ id, name, cb }) => {
   const sim = App.simulators.find(s => s.id === id);
   sim.addAmbiance({ name });
   pubsub.publish("simulatorsUpdate", App.simulators);
+  cb && cb();
 });
-App.on("removeSimulatorAmbiance", ({ id, ambianceId }) => {
+App.on("removeSimulatorAmbiance", ({ id, ambianceId, cb }) => {
   const sim = App.simulators.find(s => s.id === id);
   sim.removeAmbiance(ambianceId);
   pubsub.publish("simulatorsUpdate", App.simulators);
+  cb && cb();
 });
 App.on(
   "addSimulatorStationCard",
-  ({ simulatorId, station, cardName, cardComponent }) => {
+  ({ simulatorId, station, cardName, cardComponent, cb }) => {
     const sim = App.simulators.find(s => s.id === simulatorId);
     const stat = sim.stations.find(s => s.name === station);
     stat.addCard({
@@ -227,6 +285,7 @@ App.on(
       component: cardComponent
     });
     pubsub.publish("simulatorsUpdate", App.simulators);
+    cb && cb();
   }
 );
 App.on("removeSimulatorStationCard", ({ simulatorId, station, cardName }) => {
@@ -288,3 +347,18 @@ App.on("setAlertConditionLock", ({ simulatorId, lock }) => {
   sim.setAlertLevelLock(lock);
   pubsub.publish("simulatorsUpdate", App.simulators);
 });
+
+App.on("setSimulatorHasPrinter", ({ simulatorId, hasPrinter }) => {
+  const sim = App.simulators.find(s => s.id === simulatorId);
+  sim.setHasPrinter(hasPrinter);
+  pubsub.publish("simulatorsUpdate", App.simulators);
+});
+
+App.on(
+  "setSimulatorSpaceEdventuresId",
+  ({ simulatorId, spaceEdventuresId }) => {
+    const sim = App.simulators.find(s => s.id === simulatorId);
+    sim.setSpaceEdventuresId(spaceEdventuresId);
+    pubsub.publish("simulatorsUpdate", App.simulators);
+  }
+);

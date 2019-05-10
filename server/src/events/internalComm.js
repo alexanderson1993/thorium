@@ -89,7 +89,8 @@ App.on("internalCommCallIncoming", ({ id, incoming }) => {
       station: s.name,
       title: `New Internal Call`,
       body: incoming,
-      color: "info"
+      color: "info",
+      relevantCards: ["CommInternal"]
     });
   });
 });
@@ -106,6 +107,15 @@ App.on("internalCommCallOutgoing", ({ id, outgoing }) => {
     },
     "addCoreFeed"
   );
+  pubsub.publish("notify", {
+    id: uuid.v4(),
+    simulatorId: sys.simulatorId,
+    type: "Internal Comm",
+    station: "Core",
+    title: `New Internal Call`,
+    body: outgoing,
+    color: "info"
+  });
   pubsub.publish(
     "internalCommUpdate",
     App.systems.filter(s => s.type === "InternalComm")

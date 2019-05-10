@@ -4,6 +4,7 @@ import {
   randomFromList,
   randomCode
 } from "../classes/generic/damageReports/constants";
+import getDamageSystem from "../helpers/getDamageSystem";
 
 // From a list of fictional computers/AIs
 const usernameList = [
@@ -43,16 +44,14 @@ export default [
     },
     instructions({
       simulator,
-      requiredValues: { preamble, username, password, level },
+      requiredValues: { preamble, system: sys, username, password, level },
       task = {}
     }) {
-      const system = App.systems.find(
-        s => s.simulatorId === simulator.id && s.type === "ComputerCore"
-      );
+      const system = getDamageSystem(sys) || { name: sys };
       const station = simulator.stations.find(s =>
         s.cards.find(c => c.component === "ComputerCore")
       );
-      if (task.station === station.name) {
+      if (station && task.station === station.name) {
         return reportReplace(
           `${preamble} Create a new user. Use the following values:
           Level: ${level}
@@ -130,16 +129,18 @@ Password: ${password}`,
         )
       );
     },
-    instructions({ simulator, requiredValues: { preamble, user }, task = {} }) {
-      const system = App.systems.find(
-        s => s.simulatorId === simulator.id && s.type === "ComputerCore"
-      );
+    instructions({
+      simulator,
+      requiredValues: { preamble, system: sys, user },
+      task = {}
+    }) {
+      const system = getDamageSystem(sys) || { name: sys, users: [] };
       const u = system.users.find(us => us.id === user);
       const { level, name } = u || { name: user, level: null };
       const station = simulator.stations.find(s =>
         s.cards.find(c => c.component === "ComputerCore")
       );
-      if (task.station === station.name) {
+      if (station && task.station === station.name) {
         return reportReplace(
           `${preamble} Remove the following user:
 ${level ? `Level: ${level}\n` : ""}Username: ${name}`,
@@ -266,12 +267,10 @@ ${level ? `Level: ${level}\n` : ""}Username: ${name}`,
     },
     instructions({
       simulator,
-      requiredValues: { preamble, terminal },
+      requiredValues: { preamble, system: sys, terminal },
       task = {}
     }) {
-      const system = App.systems.find(
-        s => s.simulatorId === simulator.id && s.type === "ComputerCore"
-      );
+      const system = getDamageSystem(sys) || { name: sys, terminals: [] };
       const t = system.terminals.find(
         t => t.id === terminal || t.name === terminal
       );
@@ -279,7 +278,7 @@ ${level ? `Level: ${level}\n` : ""}Username: ${name}`,
       const station = simulator.stations.find(s =>
         s.cards.find(c => c.component === "ComputerCore")
       );
-      if (task.station === station.name) {
+      if (station && task.station === station.name) {
         return reportReplace(`${preamble} Reset terminal ${t.name}.`, {
           system,
           simulator
@@ -346,10 +345,12 @@ ${level ? `Level: ${level}\n` : ""}Username: ${name}`,
             s => s.simulatorId === simulator.id && s.class === "ComputerCore"
           );
           if (!system) return "text";
-          return system.users.filter(u => u.hacker).map(u => ({
-            label: `Level ${u.level}: ${u.name}`,
-            value: u.id
-          }));
+          return system.users
+            .filter(u => u.hacker)
+            .map(u => ({
+              label: `Level ${u.level}: ${u.name}`,
+              value: u.id
+            }));
         },
         value: ({ simulator }) => {
           if (!simulator) return "Archbishop Apotheosis";
@@ -363,16 +364,18 @@ ${level ? `Level: ${level}\n` : ""}Username: ${name}`,
         }
       }
     },
-    instructions({ simulator, requiredValues: { preamble, user }, task = {} }) {
-      const system = App.systems.find(
-        s => s.simulatorId === simulator.id && s.type === "ComputerCore"
-      );
+    instructions({
+      simulator,
+      requiredValues: { preamble, system: sys, user },
+      task = {}
+    }) {
+      const system = getDamageSystem(sys) || { name: sys, users: [] };
       const u = system.users.find(us => us.id === user);
       const { name } = u || { name: user, level: null };
       const station = simulator.stations.find(s =>
         s.cards.find(c => c.component === "ComputerCore")
       );
-      if (task.station === station.name) {
+      if (station && task.station === station.name) {
         return reportReplace(
           `${preamble} Remove the suspicious user "${name}".`,
           {
@@ -464,16 +467,18 @@ ${level ? `Level: ${level}\n` : ""}Username: ${name}`,
         }
       }
     },
-    instructions({ simulator, requiredValues: { preamble, file }, task = {} }) {
-      const system = App.systems.find(
-        s => s.simulatorId === simulator.id && s.type === "ComputerCore"
-      );
+    instructions({
+      simulator,
+      requiredValues: { preamble, system: sys, file },
+      task = {}
+    }) {
+      const system = getDamageSystem(sys) || { name: sys, files: [] };
       const f = system.files.find(us => us.id === file);
       const { name, level } = f || { name: file, level: null };
       const station = simulator.stations.find(s =>
         s.cards.find(c => c.component === "ComputerCore")
       );
-      if (task.station === station.name) {
+      if (station && task.station === station.name) {
         return reportReplace(
           `${preamble} Restore the following file: \nFile Name:${name}\n${
             level ? `Level: ${level}` : ""
@@ -549,16 +554,14 @@ ${level ? `Level: ${level}\n` : ""}Username: ${name}`,
     },
     instructions({
       simulator,
-      requiredValues: { preamble, level },
+      requiredValues: { preamble, system: sys, level },
       task = {}
     }) {
-      const system = App.systems.find(
-        s => s.simulatorId === simulator.id && s.type === "ComputerCore"
-      );
+      const system = getDamageSystem(sys) || { name: sys };
       const station = simulator.stations.find(s =>
         s.cards.find(c => c.component === "ComputerCore")
       );
-      if (task.station === station.name) {
+      if (station && task.station === station.name) {
         return reportReplace(
           `${preamble} Restore all files in Level ${level}.`,
           {
@@ -615,16 +618,14 @@ ${level ? `Level: ${level}\n` : ""}Username: ${name}`,
     },
     instructions({
       simulator,
-      requiredValues: { preamble, level },
+      requiredValues: { preamble, system: sys, level },
       task = {}
     }) {
-      const system = App.systems.find(
-        s => s.simulatorId === simulator.id && s.type === "ComputerCore"
-      );
+      const system = getDamageSystem(sys) || { name: sys };
       const station = simulator.stations.find(s =>
         s.cards.find(c => c.component === "ComputerCore")
       );
-      if (task.station === station.name) {
+      if (station && task.station === station.name) {
         return reportReplace(
           `${preamble} Perform a virus scan and remove any viruses you discover.`,
           {

@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 import { Container, Row, Col, Button, Card } from "reactstrap";
 import Measure from "react-measure";
@@ -303,7 +303,15 @@ class ReactorControl extends Component {
                   formatValue={n => `${Math.round(n)}`}
                 />
               </h2>
-              <h2>Power Used: {powerTotal}</h2>
+              <h2
+                className={
+                  reactor.efficiency * reactor.powerOutput < powerTotal
+                    ? "text-danger"
+                    : ""
+                }
+              >
+                Power Used: {powerTotal}
+              </h2>
             </div>
           </Col>
 

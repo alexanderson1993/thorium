@@ -1,5 +1,5 @@
 import React, { Component, Fragment } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 import { Container, Row, Col, Button, Input } from "reactstrap";
 import FontAwesome from "react-fontawesome";
@@ -10,6 +10,7 @@ const SYSTEMS_SUB = gql`
     systemsUpdate(simulatorId: $simulatorId, extra: true) {
       id
       name
+      displayName
       damage {
         damaged
         report
@@ -86,16 +87,13 @@ class DamageReportCore extends Component {
     if (sys.type === "Shield") {
       return `${sys.name} Shields`;
     }
-    if (sys.type === "Engine") {
-      return `${sys.name} Engines`;
-    }
-    return sys.name;
+    return sys.displayName || sys.name;
   }
   loadReport(e) {
     const self = this;
     var reader = new FileReader();
     reader.onload = function() {
-      const result = this.result;
+      const result = this.result.replace(/\r/gi, "\n");
       self.setState({
         sent: false,
         selectedReport: result
@@ -274,34 +272,36 @@ class DamageReportCore extends Component {
             style={{ display: "flex", flexDirection: "column" }}
           >
             <div className="system-list flex-max">
-              {systems.filter(s => s.damage.damaged).map(s => (
-                <p
-                  key={s.id}
-                  className={`${selectedSystem === s.id ? "selected" : ""}  ${
-                    s.damage.requested ? "requested" : ""
-                  } ${s.damage.report ? "report" : ""} ${
-                    s.damage.reactivationCode ? "reactivation" : ""
-                  } ${s.damage.validate ? "validate" : ""} ${s.damage.which}`}
-                  title={`${s.damage.requested ? "Report Requested : " : ""}${
-                    s.damage.report ? "Report Sent : " : ""
-                  }${
-                    s.damage.reactivationCode
-                      ? "Reactivation Code Requested : "
-                      : ""
-                  }${s.damage.validate ? "Validation Requested : " : ""}`}
-                  onClick={this.selectSystem.bind(this, s.id)}
-                >
-                  {s.damage.validate ? (
-                    <FontAwesome name="refresh" spin />
-                  ) : null}{" "}
-                  {this.systemName(s)} - {s.damage.currentStep + 1} /{" "}
-                  {s.damage.report
-                    ? s.damage.report
-                        .split(/Step [0-9]+:\n/gi)
-                        .filter(st => st && st !== "\n").length
-                    : 0}
-                </p>
-              ))}
+              {systems
+                .filter(s => s.damage.damaged)
+                .map(s => (
+                  <p
+                    key={s.id}
+                    className={`${selectedSystem === s.id ? "selected" : ""}  ${
+                      s.damage.requested ? "requested" : ""
+                    } ${s.damage.report ? "report" : ""} ${
+                      s.damage.reactivationCode ? "reactivation" : ""
+                    } ${s.damage.validate ? "validate" : ""} ${s.damage.which}`}
+                    title={`${s.damage.requested ? "Report Requested : " : ""}${
+                      s.damage.report ? "Report Sent : " : ""
+                    }${
+                      s.damage.reactivationCode
+                        ? "Reactivation Code Requested : "
+                        : ""
+                    }${s.damage.validate ? "Validation Requested : " : ""}`}
+                    onClick={this.selectSystem.bind(this, s.id)}
+                  >
+                    {s.damage.validate ? (
+                      <FontAwesome name="refresh" spin />
+                    ) : null}{" "}
+                    {this.systemName(s)} - {s.damage.currentStep + 1} /{" "}
+                    {s.damage.report
+                      ? s.damage.report
+                          .split(/Step [0-9]+:\n/gi)
+                          .filter(st => st && st !== "\n").length
+                      : 0}
+                  </p>
+                ))}
             </div>
 
             <Input
@@ -435,6 +435,7 @@ class DamageReportCore extends Component {
                       <Input
                         onChange={this.loadReport.bind(this)}
                         style={{ position: "absolute", opacity: 0 }}
+                        value={""}
                         type="file"
                         name="file"
                         id="exampleFile"
@@ -452,6 +453,7 @@ class DamageReportCore extends Component {
                         value={"select"}
                       >
                         <option value="select">Generate</option>
+                        <option value="3">Superficial</option>
                         <option value="5">Short</option>
                         <option value="8">Medium</option>
                         <option value="12">Long</option>
@@ -459,7 +461,7 @@ class DamageReportCore extends Component {
                     </Col>
                   </Row>
                   <Row style={{ margin: 0 }}>
-                    {selectedSystemObj.damage.validate ? (
+                    {selectedSystemObj && selectedSystemObj.damage.validate ? (
                       <Fragment>
                         <Col sm={4}>
                           <p>
@@ -517,6 +519,7 @@ const SYSTEMS_QUERY = gql`
     systems(simulatorId: $simulatorId, extra: true) {
       id
       name
+      displayName
       damage {
         damaged
         report

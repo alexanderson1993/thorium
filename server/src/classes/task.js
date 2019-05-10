@@ -3,6 +3,14 @@ import App from "../app";
 import taskDefinitions from "../tasks";
 import { randomFromList } from "./generic/damageReports/constants";
 
+class Macro {
+  constructor(params) {
+    this.id = params.id || uuid.v4();
+    this.event = params.event || "";
+    this.args = params.args || "{}";
+    this.delay = params.delay || 0;
+  }
+}
 export default class Task {
   constructor(params = {}) {
     // The check to see if the task is relevant was already handled
@@ -72,12 +80,35 @@ export default class Task {
     // Timing
     this.startTime = new Date();
     this.endTime = null;
+
+    // Macros
+    this.macros = [];
+    params.macros && params.macros.map(m => this.macros.push(new Macro(m)));
+
+    // Task Report Assignment
+    this.assigned = params.assigned || false;
   }
   verify(dismiss) {
+    if (this.verified) return;
     this.verified = true;
     if (dismiss) this.dismissed = true;
     this.verifyRequested = false;
     this.endTime = new Date();
+
+    // Trigger all the macros, unless it is assigned
+    // If it is assigned, then there is another task
+    // that will execute the macros when it is verified.
+    this.macros.length > 0 &&
+      !this.assigned &&
+      App.handleEvent(
+        { simulatorId: this.simulatorId, macros: this.macros },
+        "triggerMacros"
+      );
+
+    if (this.assigned) {
+      const task = App.tasks.find(t => t.id === this.assigned);
+      if (task) task.verify(dismiss);
+    }
   }
   dismiss() {
     this.dismissed = true;
@@ -87,5 +118,8 @@ export default class Task {
   }
   denyVerify() {
     this.verifyRequested = false;
+  }
+  assign() {
+    this.assigned = true;
   }
 }

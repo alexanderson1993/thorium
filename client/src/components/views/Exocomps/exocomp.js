@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardBody, Button } from "reactstrap";
 import { titleCase } from "change-case";
 import partsImages from "./parts";
+import DamageOverlay from "../helpers/DamageOverlay";
 
 const Exocomp = ({
   id,
@@ -11,10 +12,12 @@ const Exocomp = ({
   destination = {},
   number,
   select,
-  recall
+  recall,
+  damage
 }) => {
   return (
     <Card className="exocomp-box">
+      <DamageOverlay message="Exocomp Offline" system={{ damage, power: {} }} />
       <CardBody>
         <span className="exocomp-title">#{number}</span>
         <p>Status: {titleCase(state)}</p>
@@ -29,8 +32,7 @@ const Exocomp = ({
                 key={`part-${id}-${i}`}
                 className="exocomp-part"
                 style={{
-                  backgroundImage:
-                    console.log(id, i) || `url('${partsImages[parts[i]]}')`
+                  backgroundImage: `url('${partsImages[parts[i]]}')`
                 }}
               />
             ))}

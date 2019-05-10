@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { withApollo } from "react-apollo";
 import "./style.scss";
 
@@ -10,7 +10,9 @@ class VideoConfig extends Component {
     if (this.player.current) {
       this.player.current.playbackRate = parseFloat(data.speed) || 1;
       setTimeout(() => {
-        this.player.current.playbackRate = parseFloat(data.speed) || 1;
+        if (this.player.current) {
+          this.player.current.playbackRate = parseFloat(data.speed) || 1;
+        }
       }, 50);
     }
   }

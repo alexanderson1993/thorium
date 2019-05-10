@@ -6,6 +6,18 @@ const ipaddress = require("../helpers/ipaddress");
 
 const assetPath = path.dirname(process.argv[1]);
 const openBrowser = require("react-dev-utils/openBrowser");
+const chalk = require("chalk");
+
+server.on("error", err => {
+  if (err.code === "EADDRINUSE") {
+    console.log(
+      chalk.redBright(
+        "There is already a version of Thorium running on this computer. Shutting down..."
+      )
+    );
+    process.exit(0);
+  }
+});
 
 export default function(port = 3000) {
   if (process.env.NODE_ENV === "production") {
@@ -16,9 +28,9 @@ export default function(port = 3000) {
     server.get("*", function(request, response) {
       response.sendFile(`${assetPath}/index.html`, function(err) {
         if (err) {
-          console.log("THIS IS AN ERROR!");
-          console.log(err);
-          response.status(500).end();
+          response
+            .status(500)
+            .end("Error loading client. Please refresh your browser.");
           return;
         }
         response.end();

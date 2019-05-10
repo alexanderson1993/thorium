@@ -2,7 +2,7 @@ import React, { Component, Fragment } from "react";
 import { Mutation } from "react-apollo";
 import { Button } from "reactstrap";
 import FileExplorer from "components/views/TacticalMap/fileExplorer";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 
 class AmbianceConfig extends Component {
   state = {};
@@ -18,7 +18,7 @@ class AmbianceConfig extends Component {
               mutation SetAmbiance(
                 $stationSetID: ID!
                 $stationName: String!
-                $ambiance: String!
+                $ambiance: String
               ) {
                 setStationAmbiance(
                   stationSetID: $stationSetID
@@ -45,7 +45,7 @@ class AmbianceConfig extends Component {
                       variables: {
                         stationSetID: selectedStationSet,
                         stationName: station.name,
-                        training: ""
+                        ambiance: ""
                       }
                     });
                     this.setState({ edit: false });

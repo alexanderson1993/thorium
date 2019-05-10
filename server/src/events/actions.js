@@ -6,6 +6,7 @@ App.on("triggerAction", args => {
   args.stationId = args.stationId || "all";
   let clients = [];
   let stations = [];
+
   const bridgeStations = App.simulators
     .find(s => s.id === args.simulatorId)
     .stations.map(s => s.name);
@@ -32,12 +33,14 @@ App.on("triggerAction", args => {
     case "random":
       clients = [
         randomFromList(
-          App.clients.filter(
-            c =>
-              c.simulatorId === args.simulatorId &&
-              bridgeStations.indexOf(c.station) > -1
-          )
-        ).map(c => c.id)
+          App.clients
+            .filter(
+              c =>
+                c.simulatorId === args.simulatorId &&
+                bridgeStations.indexOf(c.station) > -1
+            )
+            .map(c => c.id)
+        )
       ];
       stations = [
         randomFromList(
@@ -61,16 +64,22 @@ App.on("triggerAction", args => {
         .filter(
           c =>
             (c.simulatorId === args.simulatorId &&
-              c.station === args.stationId) ||
+              (c.station &&
+                args.stationId &&
+                c.station.toLowerCase() === args.stationId.toLowerCase())) ||
             c.id === args.clientId ||
             c.id === args.stationId
         )
         .map(c => c.id);
       stations = App.simulators
         .find(s => s.id === args.simulatorId)
-        .stations.filter(
+        .stations.concat({ name: "Viewscreen" })
+        .filter(
           s =>
-            s.name === args.stationId || (client && client.station === s.name)
+            (s.name &&
+              args.stationId &&
+              s.name.toLowerCase() === args.stationId.toLowerCase()) ||
+            (client && client.station === s.name)
         )
         .map(s => s.name);
       break;
@@ -88,6 +97,7 @@ App.on("triggerAction", args => {
     case "lockdown":
     case "maintenance":
     case "soviet":
+    case "spaceEdventuresToken":
       clients.forEach(c =>
         App.handleEvent({ client: c, state: args.action }, "clientOfflineState")
       );
@@ -95,7 +105,7 @@ App.on("triggerAction", args => {
     case "sound":
       App.handleEvent(
         {
-          sound: { asset: args.asset },
+          sound: { asset: args.asset || args.message },
           station: args.stationId,
           simulatorId: args.simulatorId,
           clients
@@ -118,6 +128,16 @@ App.on("triggerAction", args => {
           body: "",
           color: "info"
         });
+      });
+      break;
+    case "crack":
+      clients.forEach(c => {
+        App.handleEvent({ id: c, crack: true }, "clientCrack");
+      });
+      break;
+    case "uncrack":
+      clients.forEach(c => {
+        App.handleEvent({ id: c, crack: false }, "clientCrack");
       });
       break;
     default:

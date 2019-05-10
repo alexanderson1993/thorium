@@ -4,9 +4,7 @@ import fs from "fs";
 import cors from "cors";
 import path from "path";
 import chalk from "chalk";
-import { printSchema } from "graphql/utilities/schemaPrinter";
-import schema from "../data";
-import { uploadAsset } from "../resolvers/assets";
+import uploadAsset from "../helpers/uploadAsset";
 
 import exportMission from "../imports/missions/export";
 import importMission from "../imports/missions/import";
@@ -21,6 +19,10 @@ import exportTacticalMap from "../imports/tacticalMaps/export";
 import importTacticalMap from "../imports/tacticalMaps/import";
 import exportSoftwarePanel from "../imports/softwarePanels/export";
 import importSoftwarePanel from "../imports/softwarePanels/import";
+import exportFlight from "../imports/flights/export";
+import importFlight from "../imports/flights/import";
+import exportTrigger from "../imports/triggers/export";
+import importTrigger from "../imports/triggers/import";
 
 const exports = {
   exportMission: exportMission,
@@ -28,7 +30,9 @@ const exports = {
   exportKeyboard: exportKeyboard,
   exportTacticalMap: exportTacticalMap,
   exportLibrary: exportLibrary,
-  exportSoftwarePanel: exportSoftwarePanel
+  exportSoftwarePanel: exportSoftwarePanel,
+  exportFlight,
+  exportTrigger
 };
 
 const imports = {
@@ -37,7 +41,9 @@ const imports = {
   importKeyboard: importKeyboard,
   importTacticalMap: importTacticalMap,
   importAssets: importAssets,
-  importSoftwarePanel: importSoftwarePanel
+  importSoftwarePanel: importSoftwarePanel,
+  importFlight,
+  importTrigger
 };
 export default () => {
   let appDir = "./";
@@ -46,14 +52,26 @@ export default () => {
   });
 
   const server = express();
+
+  server.on("error", err => {
+    if (err.code === "EADDRINUSE") {
+      console.log(
+        chalk.redBright(
+          "There is already a version of Thorium running on this computer. Shutting down..."
+        )
+      );
+      process.exit(0);
+    }
+  });
+
   server.use(require("express-status-monitor")({}));
 
   server.use("*", cors());
 
-  server.use("/schema", (req, res) => {
-    res.set("Content-Type", "text/plain");
-    res.send(printSchema(schema));
-  });
+  // server.use("/schema", (req, res) => {
+  //   res.set("Content-Type", "text/plain");
+  //   res.send(printSchema(schema));
+  // });
 
   server.post("/upload", upload.any(), async (req, res) => {
     uploadAsset({}, Object.assign({}, req.body, { files: req.files }), {});
@@ -106,7 +124,7 @@ export default () => {
 
     // If we're in production, the last thing we want is for the server to crash
     // Print all server errors, but don't terminate the process
-    setInterval(function() {}, Number.MAX_VALUE);
+    setInterval(function() {}, Math.pow(2, 31) - 1);
     process.on("uncaughtException", err => {
       console.log(chalk.red(`Caught exception: ${err}\n`));
       console.log(err);

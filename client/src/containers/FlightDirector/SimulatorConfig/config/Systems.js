@@ -10,12 +10,13 @@ import {
 } from "reactstrap";
 import { titleCase, camelCase } from "change-case";
 import { Query, Mutation } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import * as Configs from "./systemsConfig";
 
 const systems = [
   "ComputerCore",
   "Coolant",
+  "Crm",
   "Engine",
   "InternalComm",
   "JumpDrive",
@@ -33,12 +34,14 @@ const systems = [
   "Sickbay",
   "SignalJammer",
   "StealthField",
+  "SubspaceField",
   "Targeting",
   "Thrusters",
   "Thx",
   "Torpedo",
   "TractorBeam",
   "Transporters",
+  "Transwarp",
   "Generic"
 ];
 

@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { Row, Col, Container, Card } from "reactstrap";
 import { graphql, withApollo } from "react-apollo";
 import Measure from "react-measure";
@@ -60,10 +60,10 @@ class PowerDistribution extends Component {
       sysId: null
     };
     this.mouseMove = e => {
-      const mouseX = e.pageX || e.touches[0].pageX;
+      const mouseX = e.pageX || (e.touches && e.touches[0].pageX);
       const level = Math.max(
         0,
-        Math.min(40, Math.round((mouseX - this.state.offset - 10) / 14))
+        Math.min(40, Math.round((mouseX - this.state.offset - 10) / 11))
       );
       const { systems, sysId } = this.state;
       const newSystems = systems.map(s => {
@@ -135,7 +135,7 @@ class PowerDistribution extends Component {
       },
       {
         selector: ".totalPowerText",
-        content: "This is the total amount of power being used by the ship."
+        content: "This is the total amount of power the ship has available and how much is being used based on the power levels above."
       },
       hasBattery && {
         selector: ".battery-holder",
@@ -212,29 +212,31 @@ class PowerDistribution extends Component {
                   />
                 ))}
             </div>
-            <h4 className="totalPowerText">Total Power Used: {powerTotal}</h4>
-            {reactor && (
-              <h4>
+            <div className="totalPowerText">
+              {reactor && (
+                <h4>
                 Total Power Available:{" "}
-                {Math.round(reactor.efficiency * reactor.powerOutput)}
-              </h4>
-            )}
-            {reactor && (
-              <h4
-                className={` ${
-                  Math.round(reactor.efficiency * reactor.powerOutput) -
-                    powerTotal <
-                  0
-                    ? "text-danger"
-                    : ""
-                }`}
-              >
-                Power Draw:{" "}
-                {Math.round(reactor.efficiency * reactor.powerOutput) -
-                  powerTotal}
-              </h4>
-            )}
-          </Col>
+                  {Math.round(reactor.efficiency * reactor.powerOutput)}
+                </h4>
+                )}
+                <h4>Total Power Used: {powerTotal}</h4>
+                {reactor && (
+                  <h4
+                    className={` ${
+                      Math.round(reactor.efficiency * reactor.powerOutput) -
+                        powerTotal <
+                      0
+                        ? "text-danger"
+                        : ""
+                    }`}
+                  >
+                    Remaining Power:{" "}
+                    {Math.round(reactor.efficiency * reactor.powerOutput) -
+                      powerTotal}
+                  </h4>
+                )}
+            </div>
+        </Col>
           {battery && (
             <Col sm="4" className="battery-holder">
               <Card>
@@ -305,7 +307,7 @@ class SystemPower extends Component {
                     <div
                       className="powerLevel"
                       key={`${id}-powerLine-${n}`}
-                      style={{ left: `${(n + 1) * 14 - 7}px` }}
+                      style={{ left: `${(n + 1) * 11 - 4}px` }}
                     />
                   );
                 })}

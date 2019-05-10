@@ -1,11 +1,12 @@
 import uuid from "uuid";
 
 export class StationSet {
-  constructor({ id, name, simulatorId, stations = [] }) {
+  constructor({ id, name, simulatorId, crewCount, stations = [] }) {
     this.class = "StationSet";
     this.id = id || uuid.v4();
     this.simulatorId = simulatorId || null;
     this.name = name || "StationSet";
+    this.crewCount = crewCount || 14;
     this.stations = [];
     stations.forEach(station => {
       this.addStation(station);
@@ -23,6 +24,10 @@ export class StationSet {
   renameStation(station, newName) {
     const renameStation = this.stations.find(s => s.name === station);
     renameStation.rename(newName);
+  }
+  setCrewCount(crewCount) {
+    const count = parseInt(crewCount, 10) || 14;
+    this.crewCount = count;
   }
   addStationCard(station, card) {
     const cardStation = this.stations.find(s => s.name === station);
@@ -59,6 +64,9 @@ export class StationSet {
   }
   setAmbiance(station, ambiance) {
     this.stations.find(s => s.name === station).setAmbiance(ambiance);
+  }
+  reorderWidgets(station, widget, order) {
+    this.stations.find(s => s.name === station).reorderWidgets(widget, order);
   }
 }
 
@@ -138,6 +146,19 @@ export class Station {
   }
   setExec(exec) {
     this.executive = exec;
+  }
+  reorderWidgets(widget, order) {
+    function move(array, old_index, new_index) {
+      if (new_index >= array.length) {
+        var k = new_index - array.length;
+        while (k-- + 1) {
+          array.push(undefined);
+        }
+      }
+      array.splice(new_index, 0, array.splice(old_index, 1)[0]);
+      return array; // for testing purposes
+    }
+    this.widgets = move(this.widgets, this.widgets.indexOf(widget), order);
   }
 }
 

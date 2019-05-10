@@ -1,7 +1,19 @@
 import React, { Fragment, Component } from "react";
-import { Col, Row, Container, Button, Card, CardBody, Alert } from "reactstrap";
-import gql from "graphql-tag";
-import { graphql, Mutation } from "react-apollo";
+import {
+  Col,
+  Row,
+  Container,
+  Button,
+  Card,
+  CardBody,
+  Alert,
+  UncontrolledDropdown as Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownToggle
+} from "reactstrap";
+import gql from "graphql-tag.macro";
+import { graphql, Mutation, Query } from "react-apollo";
 import { Link } from "react-router-dom";
 import semver from "semver";
 import Tour from "helpers/tourHelper";
@@ -96,6 +108,56 @@ class Welcome extends Component {
       }
     ];
   };
+  handleImport = evt => {
+    const data = new FormData();
+    Array.from(evt.target.files).forEach((f, index) =>
+      data.append(`files[${index}]`, f)
+    );
+    fetch(
+      `${window.location.protocol}//${window.location.hostname}:${parseInt(
+        window.location.port,
+        10
+      ) + 1}/importFlight`,
+      {
+        method: "POST",
+        body: data
+      }
+    ).then(() => {
+      //  window.location.reload();
+    });
+  };
+  queryResult = ({ loading, data }) =>
+    !loading &&
+    data.thorium &&
+    data.thorium.spaceEdventuresCenter &&
+    data.thorium.spaceEdventuresCenter.flightTypes &&
+    data.thorium.spaceEdventuresCenter.flightTypes.length > 0 ? (
+      <Dropdown>
+        <DropdownToggle caret size="lg" block color="success">
+          New Flight
+        </DropdownToggle>
+        <DropdownMenu>
+          <DropdownItem tag={Link} to="/config/flight">
+            Unspecified Flight Type
+          </DropdownItem>
+          <DropdownItem divider />
+          {data.thorium.spaceEdventuresCenter.flightTypes.map(f => (
+            <DropdownItem
+              tag={Link}
+              to={`/config/flight?flightType=${f.id}`}
+              key={f.id}
+              value={f.id}
+            >
+              {f.name}
+            </DropdownItem>
+          ))}
+        </DropdownMenu>
+      </Dropdown>
+    ) : (
+      <Button tag={Link} to="/config/flight" color="success" block size="lg">
+        New Flight
+      </Button>
+    );
   render() {
     if (this.props.data.loading || !this.props.data.flights) return null;
     const flights = this.props.data.flights;
@@ -132,118 +194,116 @@ class Welcome extends Component {
             <h3 className="text-center">
               <small>{this.state.quote}</small>
             </h3>
-            {!askedToTrack &&
-              !stateAskedToTrack && (
-                <Alert color={"info"}>
-                  <FormattedMessage
-                    id="ask-to-track"
-                    defaultMessage="Would you like opt-in to share some analytics data about Thorium with the developer? You can opt-out at any time from the Settings sidebar menu."
-                  />
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    {!this.state.upgrading && (
-                      <Mutation
-                        mutation={gql`
-                          mutation SetTrackingPreference($pref: Boolean!) {
-                            setTrackingPreference(pref: $pref)
-                          }
-                        `}
-                      >
-                        {action => (
-                          <Fragment>
-                            <Button
-                              outline
-                              color="secondary"
-                              onClick={() => {
-                                action({ variables: { pref: false } });
-                                this.setState({
-                                  askedToTrack: true
-                                });
-                              }}
-                              style={{ marginRight: "20px" }}
-                            >
-                              <FormattedMessage
-                                id="no-track"
-                                defaultMessage="No Thanks"
-                              />
-                            </Button>
-                            <Button
-                              outline
-                              color="secondary"
-                              onClick={() => {
-                                action({ variables: { pref: true } });
-                                this.setState({
-                                  askedToTrack: true
-                                });
-                              }}
-                            >
-                              <FormattedMessage
-                                id="track-me"
-                                defaultMessage="Track Me"
-                              />
-                            </Button>
-                          </Fragment>
-                        )}
-                      </Mutation>
-                    )}
-                  </div>
-                </Alert>
-              )}
-            {autoUpdate &&
-              (this.state.outdated || this.state.upgrading) && (
-                <Alert color={this.state.major ? "danger" : "warning"}>
-                  <FormattedMessage
-                    id="upgrade-warning"
-                    defaultMessage="Your version of Thorium is outdated. Current version is {newVersion}. Your version is {oldVersion}"
-                    values={{
-                      oldVersion: require("../../../package.json").version,
-                      newVersion: this.state.outdated
-                    }}
-                  />{" "}
-                  {this.state.major && (
-                    <strong>
-                      <FormattedMessage
-                        id="major-upgrade-warning"
-                        defaultMessage="This is a major upgrade. Make sure you backup your Thorium data directory and program file before performing this upgrade."
-                      />
-                    </strong>
-                  )}
-                  <p>
-                    {!this.state.upgrading && (
-                      <Mutation
-                        mutation={gql`
-                          mutation TriggerAutoUpdate {
-                            triggerAutoUpdate
-                          }
-                        `}
-                      >
-                        {action => (
+            {!askedToTrack && !stateAskedToTrack && (
+              <Alert color={"info"}>
+                <FormattedMessage
+                  id="ask-to-track"
+                  defaultMessage="Would you like opt-in to share some analytics data about Thorium with the developer? You can opt-out at any time from the Settings sidebar menu."
+                />
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  {!this.state.upgrading && (
+                    <Mutation
+                      mutation={gql`
+                        mutation SetTrackingPreference($pref: Boolean!) {
+                          setTrackingPreference(pref: $pref)
+                        }
+                      `}
+                    >
+                      {action => (
+                        <Fragment>
                           <Button
                             outline
                             color="secondary"
                             onClick={() => {
-                              action();
+                              action({ variables: { pref: false } });
                               this.setState({
-                                outdated: false,
-                                upgrading: true
+                                askedToTrack: true
+                              });
+                            }}
+                            style={{ marginRight: "20px" }}
+                          >
+                            <FormattedMessage
+                              id="no-track"
+                              defaultMessage="No Thanks"
+                            />
+                          </Button>
+                          <Button
+                            outline
+                            color="secondary"
+                            onClick={() => {
+                              action({ variables: { pref: true } });
+                              this.setState({
+                                askedToTrack: true
                               });
                             }}
                           >
-                            Download Update
+                            <FormattedMessage
+                              id="track-me"
+                              defaultMessage="Track Me"
+                            />
                           </Button>
-                        )}
-                      </Mutation>
-                    )}
-                    {this.state.upgrading && (
-                      <small>
-                        <FormattedMessage
-                          id="upgrade-instructions"
-                          defaultMessage="The update is downloading in the background. Wait until the Thorium Server command line window says 'Download Complete' before restarting Thorium Server"
-                        />
-                      </small>
-                    )}
-                  </p>
-                </Alert>
-              )}
+                        </Fragment>
+                      )}
+                    </Mutation>
+                  )}
+                </div>
+              </Alert>
+            )}
+            {autoUpdate && (this.state.outdated || this.state.upgrading) && (
+              <Alert color={this.state.major ? "danger" : "warning"}>
+                <FormattedMessage
+                  id="upgrade-warning"
+                  defaultMessage="Your version of Thorium is outdated. Current version is {newVersion}. Your version is {oldVersion}"
+                  values={{
+                    oldVersion: require("../../../package.json").version,
+                    newVersion: this.state.outdated
+                  }}
+                />{" "}
+                {this.state.major && (
+                  <strong>
+                    <FormattedMessage
+                      id="major-upgrade-warning"
+                      defaultMessage="This is a major upgrade. Make sure you backup your Thorium data directory and program file before performing this upgrade."
+                    />
+                  </strong>
+                )}
+                <p>
+                  {!this.state.upgrading && (
+                    <Mutation
+                      mutation={gql`
+                        mutation TriggerAutoUpdate {
+                          triggerAutoUpdate
+                        }
+                      `}
+                    >
+                      {action => (
+                        <Button
+                          outline
+                          color="secondary"
+                          onClick={() => {
+                            action();
+                            this.setState({
+                              outdated: false,
+                              upgrading: true
+                            });
+                          }}
+                        >
+                          Download Update
+                        </Button>
+                      )}
+                    </Mutation>
+                  )}
+                  {this.state.upgrading && (
+                    <small>
+                      <FormattedMessage
+                        id="upgrade-instructions"
+                        defaultMessage="The update is downloading in the background. Wait until the Thorium Server command line window says 'Download Complete' before restarting Thorium Server"
+                      />
+                    </small>
+                  )}
+                </p>
+              </Alert>
+            )}
           </Col>
         </Row>
         <Row className="content-row">
@@ -263,21 +323,36 @@ class Welcome extends Component {
                 ))}
               </CardBody>
             </Card>
+            <label style={{ display: "block" }}>
+              <div className="btn btn-info btn-block">Import Flight</div>
+              <input type="file" hidden onChange={this.handleImport} />
+            </label>
           </div>
           <div>
             <h4 className="text-center">or</h4>
           </div>
           <div className="new-flight">
             <h3>Start a new Flight</h3>
-            <Button
-              tag={Link}
-              to="/config/flight"
-              color="success"
-              block
-              size="lg"
+            <Query
+              query={gql`
+                query Thorium {
+                  thorium {
+                    spaceEdventuresCenter {
+                      id
+                      name
+                      flightTypes {
+                        id
+                        name
+                        classHours
+                        flightHours
+                      }
+                    }
+                  }
+                }
+              `}
             >
-              New Flight
-            </Button>
+              {this.queryResult}
+            </Query>
           </div>
         </Row>
         <Tour

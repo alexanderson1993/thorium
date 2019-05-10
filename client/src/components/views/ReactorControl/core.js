@@ -1,11 +1,12 @@
 import React, { Component, Fragment } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { InputField, OutputField } from "../../generic/core";
 import { graphql, withApollo, Mutation } from "react-apollo";
 import { Container, Row, Col, Button, Input, Progress } from "reactstrap";
 import SubscriptionHelper from "helpers/subscriptionHelper";
 import { Duration } from "luxon";
 import { titleCase } from "change-case";
+import FontAwesome from "react-fontawesome";
 
 import "./style.scss";
 
@@ -27,40 +28,60 @@ function parseDepletion(time) {
     .map(t => `${t[1]} ${titleCase(t[0])}`)
     .join(", ");
 }
+
+const fragment = gql`
+  fragment ReactorData on Reactor {
+    id
+    type
+    name
+    heat
+    heatRate
+    model
+    coolant
+    damage {
+      damaged
+    }
+    ejected
+    externalPower
+    efficiency
+    efficiencies {
+      label
+      color
+      efficiency
+    }
+    displayName
+    powerOutput
+    batteryChargeRate
+    batteryChargeLevel
+    depletion
+    # For Dilithium Stress
+    alphaLevel
+    betaLevel
+    alphaTarget
+    betaTarget
+    dilithiumRate
+  }
+`;
 const REACTOR_SUB = gql`
   subscription ReactorsUpdate($simulatorId: ID!) {
     reactorUpdate(simulatorId: $simulatorId) {
-      id
-      type
-      name
-      heat
-      heatRate
-      model
-      coolant
-      damage {
-        damaged
-      }
-      ejected
-      externalPower
-      efficiency
-      efficiencies {
-        label
-        color
-        efficiency
-      }
-      displayName
-      powerOutput
-      batteryChargeRate
-      batteryChargeLevel
-      depletion
-      # For Dilithium Stress
-      alphaLevel
-      betaLevel
-      alphaTarget
-      betaTarget
+      ...ReactorData
     }
   }
+  ${fragment}
 `;
+
+const rateSpeeds = (
+  <Fragment>
+    <option value={1.5}>Fast</option>
+    <option value={1}>Normal</option>
+    <option value={0.5}>Slow</option>
+    <option value={0.25}>Very Slow</option>
+    <option value={0.1}>Super Slow</option>
+    <option value={0}>Stop</option>
+    <option value={-1}>Reverse</option>
+  </Fragment>
+);
 
 class ReactorControl extends Component {
   setEfficiency = e => {
@@ -178,15 +199,40 @@ class ReactorControl extends Component {
       variables
     });
   };
+  setDilithiumRate = value => {
+    const { reactors } = this.props.data;
+    const reactor = reactors.find(r => r.model === "reactor");
+    if (!reactor) return;
+    const mutation = gql`
+      mutation SetDilithiumRate($id: ID!, $rate: Float!) {
+        setDilithiumStressRate(id: $id, rate: $rate)
+      }
+    `;
+    const variables = {
+      id: reactor.id,
+      rate: parseFloat(value)
+    };
+    this.props.client.mutate({
+      mutation,
+      variables
+    });
+  };
   calcStressLevel = () => {
     const { reactors } = this.props.data;
-    if (!reactors[0]) return;
-    const { alphaTarget, betaTarget, alphaLevel, betaLevel } = reactors[0];
+    const reactor = reactors.find(r => r.model === "reactor");
+    if (!reactor) return;
+    const { alphaTarget, betaTarget, alphaLevel, betaLevel } = reactor;
     const alphaDif = Math.abs(alphaTarget - alphaLevel);
     const betaDif = Math.abs(betaTarget - betaLevel);
     const stressLevel = alphaDif + betaDif > 100 ? 100 : alphaDif + betaDif;
     return stressLevel;
   };
+  calculateColor = () => {
+    let stress = this.calcStressLevel();
+    if (stress < 50) return "";
+    else if (stress < 90) return "warning";
+    else return "danger";
+  }
   render() {
     if (this.props.data.loading || !this.props.data.reactors) return null;
     const { reactors } = this.props.data;
@@ -232,7 +278,9 @@ class ReactorControl extends Component {
                 <Input
                   size="sm"
                   type="select"
-                  onChange={evt => this.setEfficiency(evt.target.value)}
+                  onChange={evt =>
+                    this.setEfficiency(parseFloat(evt.target.value))
+                  }
                   value={
                     reactor.externalPower ? "external" : reactor.efficiency
                   }
@@ -262,14 +310,12 @@ class ReactorControl extends Component {
                 <Input
                   size="sm"
                   type="select"
-                  onChange={evt => this.setHeatRate(evt.target.value)}
+                  onChange={evt =>
+                    this.setHeatRate(parseFloat(evt.target.value))
+                  }
                   value={reactor.heatRate}
                 >
-                  <option value={1.5}>Fast</option>
-                  <option value={1}>Normal</option>
-                  <option value={0.5}>Slow</option>
-                  <option value={0}>Stop</option>
-                  <option value={-1}>Reverse</option>
+                  {rateSpeeds}
                 </Input>
                 <p>Reactor Heat:</p>
                 <InputField
@@ -303,30 +349,54 @@ class ReactorControl extends Component {
               </Fragment>
             )}
 
-            {this.calcStressLevel() ? (
+            {this.calcStressLevel() || this.calcStressLevel() === 0 ? (
               <Fragment>
                 <p>Dilithium Stress:</p>
                 <div style={{ display: "flex" }}>
-                  <Progress style={{ flex: 1 }} value={this.calcStressLevel()}>
+                  <Progress color = {this.calculateColor()} style={{ flex: 1 }} value={this.calcStressLevel()}>
                     {Math.round(this.calcStressLevel())}%
                   </Progress>
+                  
                   <Mutation
                     mutation={gql`
                       mutation FluxDilithium($id: ID!) {
                         fluxDilithiumStress(id: $id)
                       }
                     `}
-                    variables={{ id: reactors[0].id }}
+                    variables={{ id: reactor.id }}
                   >
                     {action => (
                       <Button
-                        style={{ width: "20px" }}
+                        style={{ 
+                          width: "20px", 
+                          height: "17px", 
+                          fontSize: ".9em", 
+                          display: "block" ,
+                        }}
                         color="danger"
+                        
                         onClick={action}
-                      />
+                      >
+                        <FontAwesome name="random" 
+                          style={{
+                            position: "relative",
+                            left: "-5px",
+                            bottom: "3px"
+                          }}
+                        />
+                      </Button>
                     )}
                   </Mutation>
                 </div>
+                <p>Dilithium Stress Rate:</p>
+                <Input
+                  size="sm"
+                  type="select"
+                  onChange={evt => this.setDilithiumRate(evt.target.value)}
+                  value={reactor.dilithiumRate}
+                >
+                  {rateSpeeds}
+                </Input>
               </Fragment>
             ) : null}
           </Col>
@@ -339,36 +409,10 @@ class ReactorControl extends Component {
 const REACTOR_QUERY = gql`
   query Reactors($simulatorId: ID!) {
     reactors(simulatorId: $simulatorId) {
-      id
-      type
-      name
-      heat
-      heatRate
-      model
-      coolant
-      damage {
-        damaged
-      }
-      externalPower
-      ejected
-      efficiency
-      efficiencies {
-        label
-        color
-        efficiency
-      }
-      displayName
-      powerOutput
-      batteryChargeRate
-      batteryChargeLevel
-      depletion
-      # For Dilithium Stress
-      alphaLevel
-      betaLevel
-      alphaTarget
-      betaTarget
+      ...ReactorData
     }
   }
+  ${fragment}
 `;
 export default graphql(REACTOR_QUERY, {
   options: ownProps => ({

@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { Input, Button, ButtonGroup } from "reactstrap";
 import { Mutation } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import ViewscreenCardList from "./viewscreenCardList";
 import Config from "./ConfigComponent";
 
@@ -37,6 +37,9 @@ class VideoViewscreenCore extends Component {
             onChange={e => this.setState({ viewscreen: e.target.value })}
             style={{ width: "auto", height: "20px", float: "left" }}
           >
+            <option value="nothing" disabled>
+              Choose a Viewscreen
+            </option>
             {viewscreens.map(v => (
               <option key={v.id} value={v.id}>
                 {v.name}
@@ -97,25 +100,28 @@ class VideoViewscreenCore extends Component {
                 }
               `}
             >
-              {action => (
-                <input
-                  type="checkbox"
-                  checked={
-                    viewscreen &&
-                    viewscreens.find(v => v.id === viewscreen).overlay
-                  }
-                  onChange={e =>
-                    action({
-                      variables: {
-                        id:
-                          viewscreen &&
-                          viewscreens.find(v => v.id === viewscreen).id,
-                        overlay: e.target.checked
-                      }
-                    })
-                  }
-                />
-              )}
+              {action => {
+                const viewscreenObj = viewscreens.find(
+                  v => v.id === viewscreen
+                );
+                const overlay = viewscreenObj ? viewscreenObj.overlay : false;
+                return (
+                  <input
+                    type="checkbox"
+                    checked={overlay}
+                    onChange={e =>
+                      action({
+                        variables: {
+                          id:
+                            viewscreen &&
+                            viewscreens.find(v => v.id === viewscreen).id,
+                          overlay: e.target.checked
+                        }
+                      })
+                    }
+                  />
+                );
+              }}
             </Mutation>{" "}
             Show card overlay
           </label>

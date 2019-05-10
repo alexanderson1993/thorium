@@ -1,6 +1,8 @@
 import React, { Fragment } from "react";
-import { Card, Button, ButtonGroup } from "reactstrap";
+import { Input, Card, Button, ButtonGroup } from "reactstrap";
 import ops from "./ops";
+import { Mutation } from "react-apollo";
+import gql from "graphql-tag.macro";
 
 const StationPicker = ({
   client,
@@ -55,12 +57,42 @@ const StationPicker = ({
     <Fragment>
       <h4>Stations</h4>
       <Card className="scroll">
+        {stationSet && (
+          <li className="list-group-item">
+            Default Bridge Crew Count:{" "}
+            <Mutation
+              mutation={gql`
+                mutation SetCrewCount($stationSetId: ID!, $crewCount: Int!) {
+                  setStationSetCrewCount(
+                    stationSetID: $stationSetId
+                    crewCount: $crewCount
+                  )
+                }
+              `}
+            >
+              {action => (
+                <Input
+                  key={stationSet.id}
+                  defaultValue={stationSet.crewCount}
+                  onBlur={e =>
+                    action({
+                      variables: {
+                        stationSetId: stationSet.id,
+                        crewCount: parseInt(e.target.value, 10)
+                      }
+                    })
+                  }
+                />
+              )}
+            </Mutation>
+          </li>
+        )}
         {stationSet &&
           stationSet.stations.map(s => (
             <li
               key={s.name}
               className={`list-group-item ${
-                selectedStation === s.id ? "selected" : ""
+                selectedStation === s.name ? "active" : ""
               }`}
               onClick={() => selectStation(s.name)}
             >

@@ -1,8 +1,35 @@
 import React from "react";
 import { FormGroup, Label, Input } from "reactstrap";
 import SoundPicker from "helpers/soundPicker";
+import { Query } from "react-apollo";
+import gql from "graphql-tag.macro";
 
-export default ({ updateArgs, args }) => {
+const Clients = React.memo(() => {
+  return (
+    <Query
+      query={gql`
+        query Clients {
+          clients(all: true) {
+            id
+          }
+        }
+      `}
+    >
+      {({ loading, data: { clients } }) =>
+        loading ? null : (
+          <optgroup label="Clients">
+            {clients.map(c => (
+              <option value={c.id} key={c.id}>
+                {c.id}
+              </option>
+            ))}
+          </optgroup>
+        )
+      }
+    </Query>
+  );
+});
+export default function playSound({ updateArgs, args }) {
   const sound = args.sound || {};
   const updateSound = (which, val) => {
     updateArgs("sound", { ...sound, [which]: val });
@@ -35,10 +62,13 @@ export default ({ updateArgs, args }) => {
           value={args.station}
           onChange={e => updateArgs("station", e.target.value)}
         >
-          <option value="Sound">Sound Player</option>
-          <option value="all">All Stations</option>
-          <option value="random">Random Station</option>
-          <option value="ECS">ECS</option>
+          <optgroup label="Generic Players">
+            <option value="Sound">Sound Player</option>
+            <option value="all">All Stations</option>
+            <option value="random">Random Station</option>
+            <option value="ECS">ECS</option>
+          </optgroup>
+          <Clients />
         </Input>
         <Label>Volume</Label>
         <Input
@@ -76,4 +106,4 @@ export default ({ updateArgs, args }) => {
       </FormGroup>
     </div>
   );
-};
+}

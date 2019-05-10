@@ -7,7 +7,7 @@ import {
   ListGroupItem,
   Button
 } from "reactstrap";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 import SubscriptionHelper from "helpers/subscriptionHelper";
 import Form from "./form";
@@ -49,10 +49,14 @@ class Surveys extends Component {
     const variables = {
       name
     };
-    this.props.client.mutate({
-      mutation,
-      variables
-    });
+    this.props.client
+      .mutate({
+        mutation,
+        variables
+      })
+      .then(({ data }) => {
+        this.setState({ selectedForm: data && data.createSurveyForm });
+      });
   };
   removeForm = () => {
     if (!window.confirm("Are you sure you want to delete this survey?")) return;
@@ -168,7 +172,10 @@ class Surveys extends Component {
             {selectedForm && (
               <Form
                 saveForm={this.saveForm}
-                form={surveyform.find(f => f.id === selectedForm).form}
+                form={
+                  surveyform.find(f => f.id === selectedForm) &&
+                  surveyform.find(f => f.id === selectedForm).form
+                }
               />
             )}
           </Col>

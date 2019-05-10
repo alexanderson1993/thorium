@@ -1,9 +1,8 @@
 import App from "../app";
 import heap from "../helpers/heap";
 
-App.on("startFlight", ({ id, name, simulators }) => {
+App.on("startFlight", ({ name, simulators }) => {
   heap.track("startFlight", App.thoriumId, {
-    id,
     name,
     ...simulators.reduce((prev, next, index) => {
       const simulator = App.simulators.find(s => s.id === next.simulatorId);
@@ -27,8 +26,10 @@ App.on("resetFlight", ({ flightId, simulatorId }) => {
 });
 App.on("deleteFlight", ({ flightId }) => {
   const flight = App.flights.find(f => f.id === flightId);
-  heap.track("deleteFlight", App.thoriumId, {
-    id: flight.id,
-    name: flight.name
-  });
+  if (flight) {
+    heap.track("deleteFlight", App.thoriumId, {
+      id: flight.id,
+      name: flight.name
+    });
+  }
 });

@@ -1,13 +1,15 @@
 import React, { Component } from "react";
 import Layouts from "../layouts";
 import Keyboard from "components/views/Keyboard";
+import InterfaceCard from "components/views/Interfaces";
 import ActionsMixin from "../generic/Actions";
 import Alerts from "../generic/Alerts";
 import SoundPlayer from "./soundPlayer";
 import Reset from "./reset";
 import TrainingPlayer from "helpers/trainingPlayer";
+import { subscribe, publish } from "../../helpers/pubsub";
 import { Mutation } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 
 const Blackout = () => {
   return (
@@ -78,7 +80,7 @@ const CardRenderer = props => {
   const layoutName =
     client.layout || station.layout || simulator.layout || "LayoutCorners";
 
-  let LayoutComponent = Layouts[layoutName] || Layouts.LayoutDefault;
+  let LayoutComponent = Layouts[layoutName] || Layouts.LayoutCorners;
   if (station.name === "Viewscreen") {
     LayoutComponent = Layouts[layoutName + "Viewscreen"] || LayoutComponent;
   }
@@ -92,11 +94,20 @@ const CardRenderer = props => {
       <Keyboard
         keyboard={station.name.replace("keyboard:", "")}
         simulator={simulator}
+        clientObj={client}
+      />
+    );
+  }
+  if (station.name.match(/interface-id:.{8}-.{4}-.{4}-.{4}-.{12}/gi)) {
+    return (
+      <InterfaceCard
+        interfaceId={station.name.replace("interface-id:", "")}
+        simulator={simulator}
       />
     );
   }
   if (station.name === "Sound") {
-    return <SoundPlayer simulator={simulator} />;
+    return <SoundPlayer clientObj={client} simulator={simulator} />;
   }
   return (
     <LayoutComponent
@@ -111,7 +122,6 @@ const CardRenderer = props => {
 };
 
 function isMedia(src = "") {
-  console.log(src);
   const extensions = [
     ".wav",
     ".mp4",
@@ -141,17 +151,57 @@ export default class CardFrame extends Component {
       };
     }
   }
+  componentDidMount() {
+    setTimeout(() => {
+      this.setState({ visible: true });
+    }, 500);
+    this.cardChangeRequestSubscription = subscribe(
+      "cardChangeRequest",
+      payload => {
+        // Searching in order of priority, find a matching card by component (card
+        // names may have been changed to protect the innocent) then change to that card's name.
+        let found = false;
+        for (let i = 0; i < payload.changeToCard.length; i++) {
+          let matchingCard = this.props.station.cards.find(
+            c => c.component === payload.changeToCard[i]
+          );
+          if (matchingCard) {
+            this.changeCard(matchingCard.name);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          const widgetName = payload.changeToCard.find(c =>
+            this.props.station.widgets.includes(c)
+          );
+          if (widgetName) {
+            publish("widgetOpen", widgetName);
+          }
+        }
+      }
+    );
+  }
+  componentWillUnmount() {
+    // Unsubscribe
+    this.cardChangeRequestSubscription();
+  }
   componentDidUpdate(prevProps) {
     if (prevProps.station.name !== this.props.station.name) {
       this.setState({
-        card: this.props.station.cards && this.props.station.cards[0].name
+        card:
+          this.props.station.cards &&
+          this.props.station.cards[0] &&
+          this.props.station.cards[0].name
       });
     }
   }
   changeCard = name => {
     const card = this.props.station.cards.find(c => c.name === name)
       ? name
-      : this.props.station.cards && this.props.station.cards[0].name;
+      : this.props.station.cards &&
+        this.props.station.cards[0] &&
+        this.props.station.cards[0].name;
     if (this.cardChanged || this.state.card === card) return;
     this.cardChanged = true;
     setTimeout(() => (this.cardChanged = false), 500);
@@ -165,9 +215,16 @@ export default class CardFrame extends Component {
       simulator: { caps, training: simTraining },
       client
     } = this.props;
+    const { visible } = this.state;
+
     return (
-      <div className={caps ? "all-caps" : ""}>
+      <div
+        className={`client-container ${caps ? "all-caps" : ""} ${
+          visible ? "visible" : ""
+        }`}
+      >
         <ActionsMixin {...this.props} changeCard={this.changeCard}>
+          {client.cracked && <div className="cracked-screen" />}
           <CardRenderer
             {...this.props}
             card={this.state.card}
@@ -185,7 +242,12 @@ export default class CardFrame extends Component {
               station={this.props.station}
               clientId={this.props.client.id}
               reset={() =>
-                this.setState({ card: this.props.station.cards[0].name })
+                this.setState({
+                  card:
+                    this.props.station.cards &&
+                    this.props.station.cards[0] &&
+                    this.props.station.cards[0].name
+                })
               }
             />
           )}
@@ -212,14 +274,16 @@ export default class CardFrame extends Component {
                 )}
               </Mutation>
             )}
-          <Alerts
-            key={`alerts-${
-              this.props.simulator ? this.props.simulator.id : "simulator"
-            }-${this.props.station ? this.props.station.name : "station"}`}
-            ref="alert-widget"
-            simulator={this.props.simulator}
-            station={this.props.station}
-          />
+          {client.offlineState !== "blackout" && (
+            <Alerts
+              key={`alerts-${
+                this.props.simulator ? this.props.simulator.id : "simulator"
+              }-${this.props.station ? this.props.station.name : "station"}`}
+              ref="alert-widget"
+              simulator={this.props.simulator}
+              station={this.props.station}
+            />
+          )}
         </ActionsMixin>
       </div>
     );

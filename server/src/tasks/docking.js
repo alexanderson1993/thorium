@@ -32,29 +32,36 @@ export default [
     },
     instructions({
       simulator,
-      requiredValues: { shuttle, preamble },
+      requiredValues: { shuttle, preamble, system: sys },
       task = {}
     }) {
       // This method takes the requiredValues and apply them to create
       // the human readable instructions
       // First, get some values
+      const system = App.systems.find(
+        s =>
+          sys &&
+          (s.id === sys ||
+            s.name.toLowerCase() === sys.toLowerCase() ||
+            s.displayName.toLowerCase() === sys.toLowerCase())
+      ) || { name: sys };
       const shuttleBay = isNaN(shuttle)
         ? App.dockingPorts.find(s => s.id === shuttle)
         : App.dockingPorts.filter(s => s.simulatorId === simulator.id)[shuttle];
       const station = simulator.stations.find(s =>
         s.cards.find(c => c.component === "Shuttles")
       );
-      if (task.station === station.name) {
+      if (station && task.station === station.name) {
         return reportReplace(
           `${preamble} Undock the shuttle in shuttlebay ${shuttleBay.name}.`,
-          { system: shuttleBay, simulator }
+          { system, simulator }
         );
       }
       return reportReplace(
         `${preamble} Ask the ${
           station ? `${station.name} Officer` : "person in charge of shuttles"
         } to undock the shuttle in shuttlebay ${shuttleBay.name}.`,
-        { system: shuttleBay, simulator }
+        { system, simulator }
       );
     },
     values: {
@@ -121,27 +128,34 @@ export default [
     },
     instructions({
       simulator,
-      requiredValues: { shuttle, preamble },
+      requiredValues: { shuttle, preamble, system: sys },
       task = {}
     }) {
       // First, get some values
+      const system = App.systems.find(
+        s =>
+          sys &&
+          (s.id === sys ||
+            s.name.toLowerCase() === sys.toLowerCase() ||
+            s.displayName.toLowerCase() === sys.toLowerCase())
+      ) || { name: sys };
       const shuttleBay = isNaN(shuttle)
         ? App.dockingPorts.find(s => s.id === shuttle)
         : App.dockingPorts.filter(s => s.simulatorId === simulator.id)[shuttle];
       const station = simulator.stations.find(s =>
         s.cards.find(c => c.component === "Shuttles")
       );
-      if (task.station === station.name) {
+      if (station && task.station === station.name) {
         return reportReplace(
           `${preamble} Dock the shuttle in shuttlebay ${shuttleBay.name}.`,
-          { system: shuttleBay, simulator }
+          { system, simulator }
         );
       }
       return reportReplace(
         `${preamble} Ask the ${
           station ? `${station.name} Officer` : "person in charge of shuttles"
         } to dock the shuttle in shuttlebay ${shuttleBay.name}.`,
-        { system: shuttleBay, simulator }
+        { system, simulator }
       );
     },
     values: {
@@ -198,21 +212,32 @@ export default [
         )
       );
     },
-    instructions({ simulator, requiredValues: { preamble }, task = {} }) {
+    instructions({
+      simulator,
+      requiredValues: { preamble, system: sys },
+      task = {}
+    }) {
+      const system = App.systems.find(
+        s =>
+          sys &&
+          (s.id === sys ||
+            s.name.toLowerCase() === sys.toLowerCase() ||
+            s.displayName.toLowerCase() === sys.toLowerCase())
+      ) || { name: sys };
       const station = simulator.stations.find(s =>
         s.cards.find(c => c.component === "Shuttles")
       );
-      if (task.station === station.name) {
+      if (station && task.station === station.name) {
         return reportReplace(
           `${preamble} Undock all of the shuttles in the shuttlebay.`,
-          { simulator }
+          { simulator, system }
         );
       }
       return reportReplace(
         `${preamble} Ask the ${
           station ? `${station.name} Officer` : "person in charge of shuttles"
         } to undock all of the shuttles in the shuttlebay.`,
-        { simulator }
+        { simulator, system }
       );
     },
     values: {
@@ -245,21 +270,32 @@ export default [
         )
       );
     },
-    instructions({ simulator, requiredValues: { preamble }, task = {} }) {
+    instructions({
+      simulator,
+      requiredValues: { preamble, system: sys },
+      task = {}
+    }) {
+      const system = App.systems.find(
+        s =>
+          sys &&
+          (s.id === sys ||
+            s.name.toLowerCase() === sys.toLowerCase() ||
+            s.displayName.toLowerCase() === sys.toLowerCase())
+      ) || { name: sys };
       const station = simulator.stations.find(s =>
         s.cards.find(c => c.component === "Shuttles")
       );
-      if (task.station === station.name) {
+      if (station && task.station === station.name) {
         return reportReplace(
           `${preamble} Dock all of the shuttles in the shuttlebay.`,
-          { simulator }
+          { simulator, system }
         );
       }
       return reportReplace(
         `${preamble} Ask the ${
           station ? `${station.name} Officer` : "person in charge of shuttles"
         } to dock all of the shuttles in the shuttlebay.`,
-        { simulator }
+        { simulator, system }
       );
     },
     values: {

@@ -1,5 +1,5 @@
 import { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { withApollo } from "react-apollo";
 import playSound from "../generic/SoundPlayer";
 
@@ -22,11 +22,14 @@ class ResetCache extends Component {
       .subscribe({
         next: ({ loading }) => {
           if (!loading) {
+            // Reset all of the sounds that are currently playing
+            this.props.removeAllSounds();
             if (
               excludedStations.indexOf(this.props.station.name) > -1 ||
-              this.props.station.cards.find(
-                c => excludedStations.indexOf(c.component) > -1
-              )
+              (this.props.station.cards &&
+                this.props.station.cards.find(
+                  c => excludedStations.indexOf(c.component) > -1
+                ))
             )
               return;
             this.props.playSound({ url: "/sciences.ogg" });

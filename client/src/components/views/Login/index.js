@@ -1,8 +1,8 @@
 import React, { Component } from "react";
 import { Button, Row, Col, Input } from "reactstrap";
-import { withApollo, Mutation } from "react-apollo";
+import { withApollo, Query, Mutation } from "react-apollo";
 import FontAwesome from "react-fontawesome";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { Asset } from "helpers/assets";
 import Tour from "helpers/tourHelper";
 import { publish } from "helpers/pubsub";
@@ -12,10 +12,13 @@ class Login extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      loginName: ""
+      loginName: "",
+      spaceEdLogin: false
     };
   }
-  _login() {
+  login = e => {
+    e.preventDefault();
+    e.stopPropagation();
     const { loginName } = this.state;
     const client = this.props.clientObj.id;
     if (loginName.length > 0) {
@@ -33,11 +36,11 @@ class Login extends Component {
         variables: obj
       });
     }
-  }
+  };
   generateTraining = () => {
     const {
       simulator: { name: simName },
-      station: { name }
+      station: { name, widgets }
     } = this.props;
     const training = [
       {
@@ -55,6 +58,13 @@ class Login extends Component {
           </p>
         )
       },
+      widgets.includes("objectives")
+        ? {
+            selector: "#widget-objectives",
+            content:
+              "This is the objectives widget. You can use it to see what your mission objective are at any time during the mission. Be sure to open it up and check it periodically to make sure you know what you are supposed to be doing."
+          }
+        : null,
       {
         selector: ".card-switcher",
         content:
@@ -71,18 +81,12 @@ class Login extends Component {
           "You should now log in to your station. Good luck with training and on your mission!"
       }
     ];
-    return training;
+    return training.filter(Boolean);
   };
   training = action => {
-    if (this.props.simulator.training) {
-      action().then(() => {
-        publish("toggleTraining");
-      });
-    } else {
-      this.setState({
-        training: true
-      });
-    }
+    action().then(() => {
+      publish("toggleTraining");
+    });
   };
   render() {
     let simulatorName;
@@ -143,35 +147,129 @@ class Login extends Component {
 
           <Col className="loginBlock" sm={{ size: 8, offset: 2 }}>
             <h2>Officer Login</h2>
-            <Input
-              data-testid="login-field"
-              onKeyDown={e => {
-                if (e.which === 13) {
-                  this._login.call(this);
+            <div className="login-form-container">
+              <form
+                // eslint-disable-next-line
+                action={"javascript:void(0);"}
+                onSubmit={this.login}
+                className={`name-field  ${
+                  !this.state.spaceEdLogin ? "expand" : ""
+                }`}
+              >
+                <Input
+                  data-testid="login-field"
+                  value={this.state.loginName}
+                  onChange={e =>
+                    this.setState({
+                      loginName: e.target.value
+                    })
+                  }
+                  ref="loginField"
+                />
+                <Button type="submit" block>
+                  Login
+                </Button>
+              </form>
+              <Mutation
+                mutation={gql`
+                  mutation LoginWithToken($token: String!) {
+                    getSpaceEdventuresLogin(token: $token)
+                  }
+                `}
+                variables={{ token: this.state.spaceEdToken }}
+              >
+                {(action, { loading }) => (
+                  <form
+                    onSubmit={
+                      loading
+                        ? () => {}
+                        : () =>
+                            action().then(res => {
+                              if (
+                                res.data &&
+                                res.data.getSpaceEdventuresLogin
+                              ) {
+                                publish("triggerNotification", {
+                                  title: res.data.getSpaceEdventuresLogin,
+                                  color: "danger"
+                                });
+                              }
+                            })
+                    }
+                    // eslint-disable-next-line
+                    action={"javascript:void(0);"}
+                    className={`space-edventures-field ${
+                      this.state.spaceEdLogin ? "expand" : ""
+                    }`}
+                  >
+                    <Input
+                      disabled={loading}
+                      value={this.state.spaceEdToken || ""}
+                      onChange={e =>
+                        this.setState({
+                          spaceEdToken: e.target.value
+                        })
+                      }
+                    />
+                    <Button disabled={loading} type="submit" block>
+                      Submit Officer Code
+                    </Button>
+                  </form>
+                )}
+              </Mutation>
+            </div>
+            {this.props.hasSpaceEd && (
+              <Button
+                block
+                onClick={() =>
+                  this.setState({
+                    spaceEdLogin: !this.state.spaceEdLogin
+                  })
                 }
-              }}
-              value={this.state.loginName}
-              onChange={e =>
-                this.setState({
-                  loginName: e.target.value
-                })
-              }
-              ref="loginField"
-            />
-            <Button onClick={this._login.bind(this)} block>
-              Login
-            </Button>
+              >
+                Login with{" "}
+                {this.state.spaceEdLogin ? "Name" : "Space EdVentures"}
+              </Button>
+            )}
           </Col>
         </Col>
         <Tour
-          client={{}}
+          client={this.props.clientObj}
           steps={this.generateTraining()}
-          training={this.state.training}
-          onRequestClose={() => this.setState({ training: false })}
+          training={this.props.clientObj.training}
         />
       </Row>
     );
   }
 }
+const FlightData = props => {
+  return (
+    <Query
+      query={gql`
+        query Flight($flightId: ID!) {
+          flights(id: $flightId) {
+            id
+            flightType
+          }
+        }
+      `}
+      variables={{ flightId: props.flight.id }}
+    >
+      {({ loading, data }) => (
+        <Login
+          {...props}
+          hasSpaceEd={
+            !(
+              loading ||
+              !data.flights ||
+              !data.flights[0] ||
+              !data.flights[0].flightType
+            )
+          }
+        />
+      )}
+    </Query>
+  );
+};
 
-export default withApollo(Login);
+export default withApollo(FlightData);

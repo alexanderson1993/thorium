@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 import { TypingField, InputField } from "../../generic/core";
 import { Container, Row, Col, Button } from "reactstrap";
@@ -97,15 +97,17 @@ class CargoControlCore extends Component {
               findInventory: res.data.inventory.map(i => ({
                 id: i.id,
                 name: i.name,
-                locations: i.roomCount.filter(rc => rc.count > 0).map(rc => ({
-                  label: (
-                    <span>
-                      {rc.room.name}, Deck {rc.room.deck.number} ({rc.count})
-                    </span>
-                  ),
-                  deck: rc.room.deck.id,
-                  room: rc.room.id
-                }))
+                locations: i.roomCount
+                  .filter(rc => rc.count > 0)
+                  .map(rc => ({
+                    label: (
+                      <span>
+                        {rc.room.name}, Deck {rc.room.deck.number} ({rc.count})
+                      </span>
+                    ),
+                    deck: rc.room.deck.id,
+                    room: rc.room.id
+                  }))
               }))
             });
           }
@@ -148,7 +150,7 @@ class CargoControlCore extends Component {
             simulatorId: this.props.simulator.id,
             name,
             metadata: {},
-            roomCount: [{ room, count }]
+            roomCount: [{ room, count: parseInt(count, 10) }]
           }
         };
         this.props.client.mutate({
@@ -164,6 +166,7 @@ class CargoControlCore extends Component {
     if (!decks || !inventory || !simulators) return null;
     let { deck, room } = this.state;
     const simulator = simulators[0];
+    const deckObj = decks.find(d => d.id === deck);
     return (
       <Container className="cargo-core">
         <SubscriptionHelper
@@ -251,8 +254,8 @@ class CargoControlCore extends Component {
               <option disabled value="select">
                 Select Room
               </option>
-              {deck &&
-                decks.find(d => d.id === deck).rooms.map(r => (
+              {deckObj &&
+                deckObj.rooms.map(r => (
                   <option key={r.id} value={r.id}>
                     {r.name}
                   </option>
@@ -309,7 +312,9 @@ class CargoControlCore extends Component {
                   })
                   .map(
                     ({ timestamp, log }) =>
-                      `${new Date(timestamp).toLocaleTimeString()}: ${log}`
+                      `${new Date(
+                        parseInt(timestamp)
+                      ).toLocaleTimeString()}: ${log}`
                   )
                   .join("\n\n")}
               </div>

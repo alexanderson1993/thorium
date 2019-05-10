@@ -1,8 +1,9 @@
 import React, { Component } from "react";
 import { FormattedMessage } from "react-intl";
 import { withApollo } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import playSound from "../generic/SoundPlayer";
+import Reset from "./reset";
 
 const QUERY = gql`
   query Ambiance($id: String!) {
@@ -41,8 +42,25 @@ class SoundPlayer extends Component {
     this.props.removeAllSounds(true);
   }
   render() {
+    if (this.props.invisible)
+      return (
+        <Reset
+          clientId={this.props.clientObj.id}
+          station={{ name: "Sound", cards: [] }}
+          reset={() => {
+            this.props.removeAllSounds();
+          }}
+        />
+      );
     return (
       <div className="keyboard-holder">
+        <Reset
+          clientId={this.props.clientObj.id}
+          station={{ name: "Sound", cards: [] }}
+          reset={() => {
+            this.props.removeAllSounds();
+          }}
+        />
         <FormattedMessage id="sound-player" defaultMessage="Sound Player" />
       </div>
     );

@@ -13,7 +13,7 @@ import {
   Row
 } from "reactstrap";
 
-const components = [
+export const notifyComponents = [
   "Alert Condition",
   "Cargo",
   "Damage Reports",
@@ -37,6 +37,7 @@ const components = [
   "Reactor",
   "Remote Access",
   "Security Teams",
+  "Security Doors",
   "Self Destruct",
   "Shields",
   "Short Range Comm",
@@ -47,7 +48,8 @@ const components = [
   "Targeting",
   "Torpedos",
   "Tractor Beam",
-  "Transporter"
+  "Transporter",
+  "Transwarp"
 ];
 
 class NotificationConfig extends Component {
@@ -57,13 +59,13 @@ class NotificationConfig extends Component {
     const storedSpeech = localStorage.getItem("allowed_speech");
     const allowed = storedAllowed
       ? JSON.parse(storedAllowed)
-      : components.reduce((prev, next) => {
+      : notifyComponents.reduce((prev, next) => {
           prev[next] = true;
           return prev;
         }, {});
     const speech = storedSpeech
       ? JSON.parse(storedSpeech)
-      : components.reduce((prev, next) => {
+      : notifyComponents.reduce((prev, next) => {
           prev[next] = true;
           return prev;
         }, {});
@@ -95,7 +97,7 @@ class NotificationConfig extends Component {
                   onClick={() =>
                     this.setState(
                       state => ({
-                        allowed: components.reduce((prev, next) => {
+                        allowed: notifyComponents.reduce((prev, next) => {
                           prev[next] = false;
                           return prev;
                         }, {})
@@ -117,7 +119,7 @@ class NotificationConfig extends Component {
                   onClick={() =>
                     this.setState(
                       state => ({
-                        allowed: components.reduce((prev, next) => {
+                        allowed: notifyComponents.reduce((prev, next) => {
                           prev[next] = true;
                           return prev;
                         }, {})
@@ -135,7 +137,7 @@ class NotificationConfig extends Component {
                 </Button>
               </ButtonGroup>
               <div className="flex-row flex-wrap" style={{ display: "flex" }}>
-                {components.map(c => (
+                {notifyComponents.map(c => (
                   <FormGroup key={c} check style={{ width: "50%" }}>
                     <Label check>
                       <Input
@@ -173,7 +175,7 @@ class NotificationConfig extends Component {
                   onClick={() =>
                     this.setState(
                       state => ({
-                        speech: components.reduce((prev, next) => {
+                        speech: notifyComponents.reduce((prev, next) => {
                           prev[next] = false;
                           return prev;
                         }, {})
@@ -195,7 +197,7 @@ class NotificationConfig extends Component {
                   onClick={() =>
                     this.setState(
                       state => ({
-                        speech: components.reduce((prev, next) => {
+                        speech: notifyComponents.reduce((prev, next) => {
                           prev[next] = true;
                           return prev;
                         }, {})
@@ -213,7 +215,7 @@ class NotificationConfig extends Component {
                 </Button>
               </ButtonGroup>
               <div className="flex-row flex-wrap" style={{ display: "flex" }}>
-                {components.map(c => (
+                {notifyComponents.map(c => (
                   <FormGroup key={c} check style={{ width: "50%" }}>
                     <Label check>
                       <Input

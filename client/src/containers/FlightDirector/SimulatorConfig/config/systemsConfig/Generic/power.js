@@ -3,7 +3,7 @@ import { FormGroup, Input, Label, Button } from "reactstrap";
 import { Mutation } from "react-apollo";
 import FontAwesome from "react-fontawesome";
 import { GENERIC_QUERY } from "./index";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 
 const Power = ({ id, simulatorId, power, powerRender }) => {
   return (
@@ -87,6 +87,23 @@ const Power = ({ id, simulatorId, power, powerRender }) => {
                   )}
                 </div>
               ))}
+            <Mutation
+              mutation={gql`
+                mutation ChangeDefaultLevel($id: ID!, $level: Int!) {
+                  changeSystemDefaultPowerLevel(id: $id, level: $level)
+                }
+              `}
+              variables={{ id, level: -1 }}
+              refetchQueries={[
+                { query: GENERIC_QUERY, variables: { id, simulatorId } }
+              ]}
+            >
+              {action => (
+                <Button color="warning" onClick={action}>
+                  0 Power Default
+                </Button>
+              )}
+            </Mutation>
             {powerRender && powerRender()}
           </div>
         )}

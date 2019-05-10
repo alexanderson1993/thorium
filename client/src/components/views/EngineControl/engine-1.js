@@ -1,12 +1,13 @@
 import React, { Fragment } from "react";
 import { Button, Col, Row } from "reactstrap";
 import { withApollo } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 
 import HeatBar from "./heatbar";
+import EngineButtons from "./engineButtons";
 
 export default withApollo(props => {
-  const { engines, setSpeed } = props;
+  const { engines, setSpeed, locked } = props;
   const applyCoolant = () => {
     const id = props.engines[0].id;
     const mutation = gql`
@@ -44,30 +45,12 @@ export default withApollo(props => {
   return (
     <Fragment>
       <Col sm="4">
-        {engines[0].speeds.map((speed, speedIndex) => {
-          let speedWord = speed;
-          if (typeof speed === "object") {
-            speedWord = speed.text;
-          }
-          return (
-            <Button
-              key={`${speed.text}-${speedIndex}`}
-              block
-              color="primary"
-              className="speedBtn"
-              disabled={
-                engines[0].power.powerLevels.findIndex(
-                  p => p > engines[0].power.power
-                ) > speedIndex
-              }
-              onClick={() => {
-                setSpeed(engines[0], speedIndex, engines, 0);
-              }}
-            >
-              {speedWord}
-            </Button>
-          );
-        })}
+        <EngineButtons
+          engine={engines[0]}
+          locked={locked}
+          engines={engines}
+          setSpeed={setSpeed}
+        />
       </Col>
       <Col sm={{ size: 2, offset: 6 }} className="flex-column">
         <Row className="flex-max">

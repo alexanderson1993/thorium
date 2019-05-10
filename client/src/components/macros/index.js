@@ -37,3 +37,27 @@ export { default as addTask } from "./addTask";
 export {
   default as setLongRangePresetMessages
 } from "./setLongRangePresetMessages";
+export { default as commUpdateSignals } from "./commUpdateSignals";
+export {
+  default as addCommandLineToSimulator,
+  default as removeCommandLineFromSimulator
+} from "./addCommandLineToSimulator";
+
+export {
+  default as addTriggerToSimulator,
+  default as removeTriggerFromSimulator
+} from "./addTriggerToSimulator";
+export { default as fluxSystemPower } from "./fluxSystemPower";
+export {
+  default as assignSpaceEdventuresBadge
+} from "./assignSpaceEdventuresBadge";
+export {
+  default as assignSpaceEdventuresMission
+} from "./assignSpaceEdventuresMission";
+export {
+  default as toggleInterfaceObjectHidden
+} from "./toggleInterfaceObjectHidden";
+export { default as notify } from "./notify";
+export {
+  default as toggleInterfaceObjectPlaying
+} from "./toggleInterfaceObjectPlaying";

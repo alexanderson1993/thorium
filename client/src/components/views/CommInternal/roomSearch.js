@@ -3,22 +3,35 @@ import PropTypes from "prop-types";
 import ReactDOM from "react-dom";
 import { Input } from "reactstrap";
 import Measure from "react-measure";
+import escapeRegex from "escape-string-regexp";
 import "./style.scss";
 
-const Search = ({ location, items, selectRoom }) => (
+const Search = ({
+  location,
+  items,
+  selectRoom,
+  boxStyle = {},
+  listStyle = {}
+}) => (
   <div
     className="search-box"
     style={{
       left: `${location.left}px`,
-      top: `${location.top + location.height}px`
+      top: `${location.top + location.height}px`,
+      ...boxStyle
     }}
   >
-    {items.length === 0 && <p className="search-item">No Results</p>}
+    {items.length === 0 && (
+      <p className="search-item" style={listStyle}>
+        No Results
+      </p>
+    )}
     {items.map(item => (
       <p
         className="search-item"
         key={item.id}
         onClick={() => selectRoom(item.id)}
+        style={listStyle}
       >
         {item.name}, Deck {item.number}
       </p>
@@ -45,7 +58,7 @@ class RoomSearch extends Component {
       []
     );
 
-    const regex = new RegExp(evt.target.value, "gui");
+    const regex = new RegExp(escapeRegex(evt.target.value || ""), "gui");
     this.setState({
       searchRooms: rooms.filter(i => i.name.match(regex)).sort((a, b) => {
         if (a.number > b.number) return 1;
@@ -58,7 +71,11 @@ class RoomSearch extends Component {
     });
   };
   render() {
-    const { selectRoom = () => {} } = this.props;
+    const {
+      selectRoom = () => {},
+      inputProps = {},
+      listProps = {}
+    } = this.props;
     return (
       <Fragment>
         <Measure bounds onResize={d => this.setState({ dimensions: d.bounds })}>
@@ -70,6 +87,7 @@ class RoomSearch extends Component {
                 placeholder="Room Search..."
                 onChange={this.setSearch}
                 value={this.state.searchQuery}
+                {...inputProps}
               />
             </div>
           )}
@@ -79,7 +97,11 @@ class RoomSearch extends Component {
             <Search
               items={this.state.searchRooms}
               location={this.state.dimensions}
-              selectRoom={selectRoom}
+              selectRoom={id => {
+                selectRoom(id);
+                this.setState({ searchQuery: "", searchRooms: null });
+              }}
+              {...listProps}
             />,
             document.body
           )}

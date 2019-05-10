@@ -1,5 +1,5 @@
-import React, { Component } from "react";
-import gql from "graphql-tag";
+import React, { Fragment, Component } from "react";
+import gql from "graphql-tag.macro";
 import { Mutation, graphql, withApollo } from "react-apollo";
 import { Container, Row, Col, Input } from "reactstrap";
 import { InputField, OutputField } from "../../generic/core";
@@ -98,101 +98,127 @@ class ThrusterCore extends Component {
           <Col sm={4}>Pitch</Col>
           <Col sm={4}>Roll</Col>
           <Col sm={4}>
-            <OutputField>{Math.floor(thrusters.rotation.yaw)}</OutputField>
+            <OutputField>
+              {Math.floor(thrusters.rotation && thrusters.rotation.yaw)}
+            </OutputField>
           </Col>
           <Col sm={4}>
-            <OutputField>{Math.floor(thrusters.rotation.pitch)}</OutputField>
+            <OutputField>
+              {Math.floor(thrusters.rotation && thrusters.rotation.pitch)}
+            </OutputField>
           </Col>
           <Col sm={4}>
-            <OutputField>{Math.floor(thrusters.rotation.roll)}</OutputField>
+            <OutputField>
+              {Math.floor(thrusters.rotation && thrusters.rotation.roll)}
+            </OutputField>
           </Col>
-          <Col sm={4}>
-            <InputField
-              alert={
-                Math.round(thrusters.rotation.yaw) !==
-                Math.round(thrusters.rotationRequired.yaw)
-              }
-              prompt="What is the required yaw?"
-              onClick={value => {
-                this.setRequiredRotation(
-                  "yaw",
-                  Math.min(359, Math.max(0, value))
-                );
-              }}
-            >
-              {Math.round(thrusters.rotationRequired.yaw)}
-            </InputField>
-          </Col>
-          <Col sm={4}>
-            <InputField
-              alert={
-                Math.round(thrusters.rotation.pitch) !==
-                Math.round(thrusters.rotationRequired.pitch)
-              }
-              prompt="What is the required pitch?"
-              onClick={value => {
-                this.setRequiredRotation(
-                  "pitch",
-                  Math.min(359, Math.max(0, value))
-                );
-              }}
-            >
-              {Math.round(thrusters.rotationRequired.pitch)}
-            </InputField>
-          </Col>
-          <Col sm={4}>
-            <InputField
-              alert={
-                Math.round(thrusters.rotation.roll) !==
-                Math.round(thrusters.rotationRequired.roll)
-              }
-              prompt="What is the required roll?"
-              onClick={value => {
-                this.setRequiredRotation(
-                  "roll",
-                  Math.min(359, Math.max(0, value))
-                );
-              }}
-            >
-              {Math.round(thrusters.rotationRequired.roll)}
-            </InputField>
-          </Col>
-          <ThrusterArrow
-            name="arrow-circle-down"
-            value={
-              thrusters.direction.z < 0 ? Math.abs(thrusters.direction.z) : 0
-            }
-          />
-          <ThrusterArrow
-            name="arrow-up"
-            value={
-              thrusters.direction.y > 0 ? Math.abs(thrusters.direction.y) : 0
-            }
-          />
-          <ThrusterArrow
-            name="arrow-circle-up"
-            value={
-              thrusters.direction.z > 0 ? Math.abs(thrusters.direction.z) : 0
-            }
-          />
-          <ThrusterArrow
-            name="arrow-left"
-            value={
-              thrusters.direction.x < 0 ? Math.abs(thrusters.direction.x) : 0
-            }
-          />
-          <ThrusterArrow
-            name="arrow-down"
-            value={
-              thrusters.direction.y < 0 ? Math.abs(thrusters.direction.y) : 0
-            }
-          />
-          <ThrusterArrow
-            name="arrow-right"
-            value={
-              thrusters.direction.x > 0 ? Math.abs(thrusters.direction.x) : 0
-            }
-          />
+          {thrusters && thrusters.rotationRequired && (
+            <Fragment>
+              <Col sm={4}>
+                <InputField
+                  alert={
+                    Math.round(thrusters.rotation && thrusters.rotation.yaw) !==
+                    Math.round(thrusters.rotationRequired.yaw)
+                  }
+                  prompt="What is the required yaw?"
+                  onClick={value => {
+                    this.setRequiredRotation(
+                      "yaw",
+                      Math.min(359, Math.max(0, value))
+                    );
+                  }}
+                >
+                  {Math.round(thrusters.rotationRequired.yaw)}
+                </InputField>
+              </Col>
+              <Col sm={4}>
+                <InputField
+                  alert={
+                    Math.round(thrusters.rotation.pitch) !==
+                    Math.round(thrusters.rotationRequired.pitch)
+                  }
+                  prompt="What is the required pitch?"
+                  onClick={value => {
+                    this.setRequiredRotation(
+                      "pitch",
+                      Math.min(359, Math.max(0, value))
+                    );
+                  }}
+                >
+                  {Math.round(thrusters.rotationRequired.pitch)}
+                </InputField>
+              </Col>
+              <Col sm={4}>
+                <InputField
+                  alert={
+                    Math.round(thrusters.rotation.roll) !==
+                    Math.round(thrusters.rotationRequired.roll)
+                  }
+                  prompt="What is the required roll?"
+                  onClick={value => {
+                    this.setRequiredRotation(
+                      "roll",
+                      Math.min(359, Math.max(0, value))
+                    );
+                  }}
+                >
+                  {Math.round(thrusters.rotationRequired.roll)}
+                </InputField>
+              </Col>
+            </Fragment>
+          )}
+          {thrusters.direction && (
+            <Fragment>
+              <ThrusterArrow
+                name="arrow-circle-down"
+                value={
+                  thrusters.direction.z < 0
+                    ? Math.abs(thrusters.direction.z)
+                    : 0
+                }
+              />
+              <ThrusterArrow
+                name="arrow-up"
+                value={
+                  thrusters.direction.y > 0
+                    ? Math.abs(thrusters.direction.y)
+                    : 0
+                }
+              />
+              <ThrusterArrow
+                name="arrow-circle-up"
+                value={
+                  thrusters.direction.z > 0
+                    ? Math.abs(thrusters.direction.z)
+                    : 0
+                }
+              />
+              <ThrusterArrow
+                name="arrow-left"
+                value={
+                  thrusters.direction.x < 0
+                    ? Math.abs(thrusters.direction.x)
+                    : 0
+                }
+              />
+              <ThrusterArrow
+                name="arrow-down"
+                value={
+                  thrusters.direction.y < 0
+                    ? Math.abs(thrusters.direction.y)
+                    : 0
+                }
+              />
+              <ThrusterArrow
+                name="arrow-right"
+                value={
+                  thrusters.direction.x > 0
+                    ? Math.abs(thrusters.direction.x)
+                    : 0
+                }
+              />
+            </Fragment>
+          )}
         </Row>
         <Row>
           <Col sm={6}>
@@ -211,7 +237,10 @@ class ThrusterCore extends Component {
                   value={thrusters.rotationSpeed}
                   onChange={e => {
                     action({
-                      variables: { id: thrusters.id, speed: e.target.value }
+                      variables: {
+                        id: thrusters.id,
+                        speed: parseFloat(e.target.value)
+                      }
                     });
                   }}
                 >
@@ -248,7 +277,10 @@ class ThrusterCore extends Component {
                   value={thrusters.movementSpeed}
                   onChange={e => {
                     action({
-                      variables: { id: thrusters.id, speed: e.target.value }
+                      variables: {
+                        id: thrusters.id,
+                        speed: parseFloat(e.target.value)
+                      }
                     });
                   }}
                 >

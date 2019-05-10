@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import FontAwesome from "react-fontawesome";
 import { Container, Row, Col, Button, Input } from "reactstrap";
 import { graphql, withApollo } from "react-apollo";
@@ -55,13 +55,16 @@ class NavigationCore extends Component {
   }
   componentDidUpdate(prevProps) {
     if (!this.props.data.loading) {
-      const navigation = this.props.data.navigation[0];
+      const navigation =
+        this.props.data.navigation && this.props.data.navigation[0];
+      if (!navigation) return;
       if (!this.state.calculatedCourse && navigation) {
         return this.setState({
           calculatedCourse: navigation.calculatedCourse
         });
       }
-      const oldNavigation = prevProps.data.navigation[0];
+      const oldNavigation =
+        prevProps.data.navigation && prevProps.data.navigation[0];
       if (navigation && oldNavigation) {
         if (
           navigation.calculatedCourse.x !== oldNavigation.calculatedCourse.x ||
@@ -112,9 +115,9 @@ class NavigationCore extends Component {
     `;
     const variables = {
       id: navigation.id,
-      x: course.x,
-      y: course.y,
-      z: course.z
+      x: String(course.x),
+      y: String(course.y),
+      z: String(course.z)
     };
     this.props.client.mutate({
       mutation,

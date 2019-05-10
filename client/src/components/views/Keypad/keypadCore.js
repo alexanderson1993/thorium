@@ -9,7 +9,7 @@ import {
   ListGroupItem
 } from "reactstrap";
 import { Mutation } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { InputField } from "../../generic/core";
 
 class KeypadCore extends Component {
@@ -41,7 +41,7 @@ class KeypadCore extends Component {
     const { keypads } = this.props;
     const { selectedKeypad, changed } = this.state;
     const clients = this.props.clients
-      .filter(c => c.station && c.station.name === "RemoteAccess")
+      .filter(c => c.station && c.station.name === "Keypad")
       .map(c => keypads.find(k => k.id === c.id));
     const keypad = keypads.find(k => k.id === selectedKeypad);
     return clients.length === 0 ? (
@@ -51,31 +51,34 @@ class KeypadCore extends Component {
         <Row>
           <Col sm={4}>
             <ListGroup>
-              {clients.map(c => (
-                <ListGroupItem
-                  key={c.id}
-                  active={c.id === selectedKeypad}
-                  onClick={() =>
-                    this.setState(state => ({
-                      selectedKeypad: c.id,
-                      changed: { ...state.changed, [c.id]: false }
-                    }))
-                  }
-                  style={{
-                    backgroundColor: changed[c.id]
-                      ? `rgba(255, 0, 0, 0.3)`
-                      : null
-                  }}
-                >
-                  {c.id}
-                </ListGroupItem>
-              ))}
+              {clients.map(
+                c =>
+                  c && (
+                    <ListGroupItem
+                      key={c.id}
+                      active={c.id === selectedKeypad}
+                      onClick={() =>
+                        this.setState(state => ({
+                          selectedKeypad: c.id,
+                          changed: { ...state.changed, [c.id]: false }
+                        }))
+                      }
+                      style={{
+                        backgroundColor: changed[c.id]
+                          ? `rgba(255, 0, 0, 0.3)`
+                          : null
+                      }}
+                    >
+                      {c.label}
+                    </ListGroupItem>
+                  )
+              )}
             </ListGroup>
           </Col>
           {keypad && (
             <Col sm={8}>
               <p>
-                <strong>Name:</strong> {keypad.id}
+                <strong>Name:</strong> {keypad.label}
               </p>
               <div>
                 <strong>Req. Code:</strong>
@@ -93,10 +96,13 @@ class KeypadCore extends Component {
                         keypad.codeLength
                       } numerical digits, or leave blank to pick a random code.`}
                       onClick={value =>
+                        value &&
                         action({
                           variables: {
                             id: keypad.id,
-                            code: value.split("").map(v => parseInt(v, 10))
+                            code: String(value)
+                              .split("")
+                              .map(v => parseInt(v, 10))
                           }
                         })
                       }

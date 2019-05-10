@@ -1,43 +1,50 @@
 import React from "react";
 import { Query } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import SubscriptionHelper from "helpers/subscriptionHelper";
 import Conversations from "./conversations";
 import playSound from "../../../generic/SoundPlayer";
-const queryData = `
-id
-sender
-content
-timestamp
-simulatorId
-destination`;
-const MESSAGING_QUERY = gql`
-query Messages($simulatorId: ID!) {
-  messages(simulatorId: $simulatorId) {
-${queryData}
-  }
-  teams(simulatorId: $simulatorId) {
+const fragment = gql`
+  fragment MessageData on Message {
     id
-    name
-    type
+    sender
+    content
+    timestamp
+    simulatorId
+    destination
   }
-}
+`;
+const MESSAGING_QUERY = gql`
+  query Messages($simulatorId: ID!) {
+    messages(simulatorId: $simulatorId) {
+      ...MessageData
+    }
+    teams(simulatorId: $simulatorId, cleared: true) {
+      id
+      name
+      type
+      cleared
+    }
+  }
+  ${fragment}
 `;
 
 const MESSAGING_SUB = gql`
   subscription GotMessage($simulatorId: ID!) {
     sendMessage(simulatorId: $simulatorId) {
-      ${queryData}
+      ...MessageData
     }
   }
+  ${fragment}
 `;
 
 const TEAMS_SUB = gql`
   subscription TeamsUpdate($simulatorId: ID) {
-    teamsUpdate(simulatorId: $simulatorId) {
+    teamsUpdate(simulatorId: $simulatorId, cleared: true) {
       id
       name
       type
+      cleared
     }
   }
 `;
@@ -99,7 +106,18 @@ const MessagingData = props => (
           <div
             style={{ height: "100%", display: "flex", flexDirection: "column" }}
           >
-            <Conversations {...props} messages={messages} teams={teams} />
+            <Conversations
+              {...props}
+              messages={messages.filter(
+                m =>
+                  !teams.find(
+                    t =>
+                      t.cleared === true &&
+                      (t.name === m.sender || t.name === m.destination)
+                  )
+              )}
+              teams={teams.filter(t => !t.cleared)}
+            />
           </div>
         </SubscriptionHelper>
       );

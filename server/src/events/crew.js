@@ -1,30 +1,34 @@
 import App from "../app.js";
 import { pubsub } from "../helpers/subscriptionManager.js";
 import * as Classes from "../classes";
-import firstNames from "../crew/firstNames.json";
-import lastNames from "../crew/lastNames.json";
-import positions from "../crew/positions.json";
-import ranks from "../crew/ranks.json";
 import {
   randomFromList,
   damagePositions
 } from "../classes/generic/damageReports/constants";
+import firstNames from "../crew/firstNames";
+import lastNames from "../crew/lastNames";
+import positions from "../crew/positions";
+import ranks from "../crew/ranks";
 
 App.on("addCrewmember", ({ crew }) => {
   App.crew.push(new Classes.Crew(crew));
   pubsub.publish("crewUpdate", App.crew);
+  pubsub.publish("crewCountUpdate", App.crew);
 });
 App.on("removeCrewmember", ({ id }) => {
   App.crew = App.crew.filter(c => c.id !== id);
   pubsub.publish("crewUpdate", App.crew);
+  pubsub.publish("crewCountUpdate", App.crew);
 });
 App.on("removeAllCrew", ({ simulatorId }) => {
   App.crew = App.crew.filter(c => c.simulatorId !== simulatorId);
   pubsub.publish("crewUpdate", App.crew);
+  pubsub.publish("crewCountUpdate", App.crew);
 });
 App.on("updateCrewmember", ({ crew }) => {
   App.crew.find(c => c.id === crew.id).update(crew);
   pubsub.publish("crewUpdate", App.crew);
+  pubsub.publish("crewCountUpdate", App.crew);
 });
 App.on("newRandomCrewmember", ({ simulatorId, type, position }) => {
   const crew = {
@@ -38,6 +42,7 @@ App.on("newRandomCrewmember", ({ simulatorId, type, position }) => {
   };
   App.crew.push(new Classes.Crew(crew));
   pubsub.publish("crewUpdate", App.crew);
+  pubsub.publish("crewCountUpdate", App.crew);
 });
 
 function getPosition(type, simulatorId) {
@@ -55,4 +60,5 @@ App.on("crewImport", ({ simulatorId, crew }) => {
     App.crew.push(new Classes.Crew({ ...c, simulatorId }));
   });
   pubsub.publish("crewUpdate", App.crew);
+  pubsub.publish("crewCountUpdate", App.crew);
 });

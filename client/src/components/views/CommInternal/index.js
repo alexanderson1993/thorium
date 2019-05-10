@@ -1,11 +1,12 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 import { Container, Row, Col, Button } from "reactstrap";
 import DamageOverlay from "../helpers/DamageOverlay";
 import { DeckDropdown, RoomDropdown } from "helpers/shipStructure";
 import SubscriptionHelper from "helpers/subscriptionHelper";
 import Tour from "helpers/tourHelper";
+import RoomSearch from "./roomSearch";
 
 const INTERNAL_SUB = gql`
   subscription InternalCommUpdate($simulatorId: ID!) {
@@ -116,6 +117,12 @@ class InternalComm extends Component {
       variables
     });
   }
+  selectRoom = id => {
+    const deck = this.props.data.decks.find(d =>
+      d.rooms.find(r => r.id === id)
+    );
+    this.setState({ deck: deck.id, room: id });
+  };
   render() {
     if (this.props.data.loading || !this.props.data.internalComm) return null;
     const internalComm = this.props.data.internalComm[0];
@@ -205,43 +212,59 @@ class InternalComm extends Component {
             </Button>
           </Col>
         </Row>
+        <Row>
+          <Col sm={{ size: 6, offset: 3 }} style={{ paddingTop: "10px" }}>
+            <RoomSearch
+              decks={decks}
+              selectRoom={this.selectRoom}
+              inputProps={{ bsSize: "lg" }}
+              listProps={{
+                listStyle: { fontSize: "20px", padding: "5px 10px" },
+                boxStyle: {
+                  backgroundColor: "rgba(0,0,0,0.8)",
+                  borderColor: "rgba(255,255,255,0.5)",
+                  width: "500px",
+                  maxHeight: "500px"
+                }
+              }}
+            />
+          </Col>
+        </Row>
         <Row
           style={{ height: "10vh", margin: "10vh 0" }}
           className="buttons-section"
         >
           <Col sm={{ size: 8, offset: 2 }}>
-            {internalComm.state !== "connected" &&
-              internalComm.incoming && (
-                <div>
-                  <h1 className="text-center">
-                    Incoming call from: {internalComm.incoming}
-                  </h1>
-                  <Button
-                    style={buttonStyle}
-                    color="info"
-                    block
-                    onClick={this.connect.bind(this)}
-                  >
-                    Connect
-                  </Button>
-                </div>
-              )}
-            {internalComm.state !== "connected" &&
-              internalComm.outgoing && (
-                <div>
-                  <h1 className="text-center">
-                    Calling: {internalComm.outgoing}
-                  </h1>
-                  <Button
-                    style={buttonStyle}
-                    color="warning"
-                    block
-                    onClick={this.cancelCall.bind(this)}
-                  >
-                    Cancel Call
-                  </Button>
-                </div>
-              )}
+            {internalComm.state !== "connected" && internalComm.incoming && (
+              <div>
+                <h1 className="text-center">
+                  Incoming call from: {internalComm.incoming}
+                </h1>
+                <Button
+                  style={buttonStyle}
+                  color="info"
+                  block
+                  onClick={this.connect.bind(this)}
+                >
+                  Connect
+                </Button>
+              </div>
+            )}
+            {internalComm.state !== "connected" && internalComm.outgoing && (
+              <div>
+                <h1 className="text-center">
+                  Calling: {internalComm.outgoing}
+                </h1>
+                <Button
+                  style={buttonStyle}
+                  color="warning"
+                  block
+                  onClick={this.cancelCall.bind(this)}
+                >
+                  Cancel Call
+                </Button>
+              </div>
+            )}
             {internalComm.state === "connected" && (
               <div>
                 <h1 className="text-center">

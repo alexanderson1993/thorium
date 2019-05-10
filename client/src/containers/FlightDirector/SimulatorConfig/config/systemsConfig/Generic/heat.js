@@ -2,7 +2,7 @@ import React from "react";
 import { FormGroup, Input, Label } from "reactstrap";
 import { Mutation } from "react-apollo";
 import { GENERIC_QUERY } from "./index";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 
 const Power = ({ id, simulatorId, heatRate }) => {
   return (
@@ -23,7 +23,9 @@ const Power = ({ id, simulatorId, heatRate }) => {
             type="number"
             min={0}
             defaultValue={heatRate}
-            onChange={e => action({ variables: { id, rate: e.target.value } })}
+            onChange={e =>
+              action({ variables: { id, rate: parseFloat(e.target.value) } })
+            }
           />
         )}
       </Mutation>

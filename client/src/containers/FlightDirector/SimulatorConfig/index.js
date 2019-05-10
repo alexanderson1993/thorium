@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Col, Row, Container, Button } from "reactstrap";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { Query, withApollo } from "react-apollo";
 
 import SimulatorProperties from "./SimulatorProperties";
@@ -8,133 +8,175 @@ import * as Config from "./config";
 
 import "./SimulatorConfig.scss";
 
-const query = `id
-name
-layout
-caps
-exocomps
-panels
-stepDamage
-verifyStep
-bridgeOfficerMessaging
-requiredDamageSteps {
-  id
-  name
-  args {
-    end
-    cleanup
-    name
-    orders
-    room
-    preamble
-    type
-    message
-    code
-    inventory
-    destination
-    equipment
-    query
-    reactivate
-  }
-}
-optionalDamageSteps {
-  id
-  name
-  args {
-    end
-    cleanup
-    name
-    orders
-    room
-    preamble
-    type
-    message
-    code
-    inventory
-    destination
-    equipment
-    query
-    reactivate
-  }
-}
-assets {
-  mesh
-  texture
-  side
-  top
-  logo
-  bridge
-}
-systems {
-  id
-  type
-  name
-  requiredDamageSteps {
+const fragment = gql`
+  fragment SimulatorConfigData on Simulator {
     id
     name
-    args {
-      end
-      cleanup
-      name
-      orders
-      room
-      preamble
-      type
-      message
-      code
-      inventory
-      destination
-      equipment
-      query
-      reactivate
-    }
-  }
-  optionalDamageSteps {
-    id
-    name
-    args {
-      end
-      cleanup
-      name
-      orders
-      room
-      preamble
-      type
-      message
-      code
-      inventory
-      destination
-      equipment
-      query
-      reactivate
-    }
-  }
-}
-stationSets {
-  id
-  name
-  stations {
-    name
-    description
-    training
-    ambiance
-    login
-    executive
-    messageGroups
+    alertlevel
     layout
-    widgets
-    cards {
+    caps
+    exocomps
+    panels
+    commandLines
+    triggers
+    interfaces
+    stepDamage
+    verifyStep
+    hasPrinter
+    bridgeOfficerMessaging
+    spaceEdventuresId
+    requiredDamageSteps {
+      id
       name
-      component
+      args {
+        end
+        cleanup
+        name
+        orders
+        room
+        preamble
+        type
+        message
+        code
+        inventory
+        destination
+        equipment
+        query
+        reactivate
+      }
+    }
+    optionalDamageSteps {
+      id
+      name
+      args {
+        end
+        cleanup
+        name
+        orders
+        room
+        preamble
+        type
+        message
+        code
+        inventory
+        destination
+        equipment
+        query
+        reactivate
+      }
+    }
+    damageTasks {
+      id
+      taskTemplate {
+        id
+        name
+        definition
+        reportTypes
+      }
+      required
+      nextSteps {
+        id
+        name
+        definition
+      }
+    }
+    assets {
+      mesh
+      texture
+      side
+      top
+      logo
+      bridge
+    }
+    systems {
+      id
+      type
+      name
+      requiredDamageSteps {
+        id
+        name
+        args {
+          end
+          cleanup
+          name
+          orders
+          room
+          preamble
+          type
+          message
+          code
+          inventory
+          destination
+          equipment
+          query
+          reactivate
+        }
+      }
+      optionalDamageSteps {
+        id
+        name
+        args {
+          end
+          cleanup
+          name
+          orders
+          room
+          preamble
+          type
+          message
+          code
+          inventory
+          destination
+          equipment
+          query
+          reactivate
+        }
+      }
+      damageTasks {
+        id
+        taskTemplate {
+          id
+          name
+          definition
+          reportTypes
+        }
+        required
+        nextSteps {
+          id
+          name
+          definition
+        }
+      }
+    }
+    stationSets {
+      id
+      name
+      crewCount
+      stations {
+        name
+        description
+        training
+        ambiance
+        login
+        executive
+        messageGroups
+        layout
+        widgets
+        cards {
+          name
+          component
+        }
+      }
     }
   }
-}`;
+`;
 const SIMULATOR_SUB = gql`
   subscription SimulatorsUpdate {
     simulatorsUpdate(template: true) {
-      ${query}
+      ...SimulatorConfigData
     }
   }
+  ${fragment}
 `;
 
 const STATIONSET_SUB = gql`
@@ -142,6 +184,7 @@ const STATIONSET_SUB = gql`
     stationSetUpdate {
       id
       name
+      crewCount
       simulator {
         id
       }
@@ -246,7 +289,7 @@ class SimulatorConfig extends Component {
               Remove Simulator
             </Button>
           </Col>
-          <Col sm={10}>
+          <Col sm={10} style={{ height: "100%", overflowY: "auto" }}>
             <ConfigComponentData
               selectedProperty={selectedProperty}
               simulatorId={simulatorId}
@@ -261,9 +304,10 @@ class SimulatorConfig extends Component {
 const SIMULATOR_QUERY = gql`
   query Simulators($simulatorId: String!) {
     simulators(id: $simulatorId) {
-      ${query}
+      ...SimulatorConfigData
     }
   }
+  ${fragment}
 `;
 
 class ConfigComponent extends React.PureComponent {
@@ -290,6 +334,7 @@ class ConfigComponent extends React.PureComponent {
                 returnSimulator.stationSets.push({
                   id: ss.id,
                   name: ss.name,
+                  crewCount: ss.crewCount,
                   stations: ss.stations,
                   __typename: ss.__typename
                 });
@@ -303,6 +348,7 @@ class ConfigComponent extends React.PureComponent {
   }
   componentWillUnmount() {
     this.simsub && this.simsub();
+    this.stationsub && this.stationsub();
   }
   render() {
     const { Comp, selectedSimulator } = this.props;

@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo, Mutation } from "react-apollo";
 import { Label, Row, Col, Input, Button, ButtonGroup } from "reactstrap";
 import Preview, { Viewscreen } from "./index";
@@ -11,20 +11,24 @@ import "./style.scss";
 
 const CardPreview = Viewscreen;
 
-const queryData = `
-id
-name
-component
-data
-auto
-secondary
-overlay`;
+const fragment = gql`
+  fragment ViewscreenData on Viewscreen {
+    id
+    name
+    component
+    data
+    auto
+    secondary
+    overlay
+  }
+`;
 const VIEWSCREEN_SUB = gql`
   subscription ViewscreenSub($simulatorId: ID) {
     viewscreensUpdate(simulatorId: $simulatorId) {
-${queryData}
+      ...ViewscreenData
     }
   }
+  ${fragment}
 `;
 
 class ViewscreenManager extends Component {
@@ -191,7 +195,7 @@ class ViewscreenManager extends Component {
         <div className="core" style={{ height: "100%" }}>
           <div className="q2">
             <Row style={{ height: "100%" }}>
-              <Col sm={6}>
+              <Col sm={6} style={{ height: "100%" }}>
                 <Label>Viewscreen</Label>
                 <Input
                   type="select"
@@ -214,6 +218,7 @@ class ViewscreenManager extends Component {
                     checked={
                       selectedViewscreen &&
                       viewscreens.length &&
+                      viewscreens.find(v => v.id === selectedViewscreen) &&
                       viewscreens.find(v => v.id === selectedViewscreen).auto
                     }
                     onChange={this.toggleAuto}
@@ -282,7 +287,14 @@ class ViewscreenManager extends Component {
                   'Option' + 'Shift'
                 </small>
               </Col>
-              <Col sm={6} style={{ display: "flex", flexDirection: "column" }}>
+              <Col
+                sm={6}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%"
+                }}
+              >
                 <Label>Cards</Label>
                 <ViewscreenCardList
                   previewComponent={previewComponent}
@@ -382,9 +394,10 @@ class ViewscreenManager extends Component {
 const VIEWSCREEN_QUERY = gql`
   query Viewscreens($simulatorId: ID) {
     viewscreens(simulatorId: $simulatorId) {
-      ${queryData}
+      ...ViewscreenData
     }
   }
+  ${fragment}
 `;
 export default graphql(VIEWSCREEN_QUERY, {
   options: ownProps => ({

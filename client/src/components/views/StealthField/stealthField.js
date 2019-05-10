@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Container, Row, Col, Button } from "reactstrap";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { Mutation } from "react-apollo";
 
 import Tour from "helpers/tourHelper";
@@ -26,12 +26,31 @@ const trainingSteps = [
 
 export default class StealthField extends Component {
   scene = null;
+  mouseUp = which => level => {
+    const { id } = this.props;
+    const mutation = gql`
+      mutation StealthQuadrant($id: ID, $which: String, $value: Float) {
+        setStealthQuadrant(id: $id, which: $which, value: $value)
+      }
+    `;
+    const variables = {
+      id,
+      which,
+      value: Math.round(level * 20) / 20
+    };
+    return this.props.client.mutate({
+      mutation,
+      variables
+    });
+  };
   render() {
     const {
       id,
       state,
       name,
       charge,
+      damage,
+      power,
       activated,
       systems,
       quadrants,
@@ -51,6 +70,7 @@ export default class StealthField extends Component {
                     value={quadrants.fore}
                     label="Fore"
                     simulator={simulator}
+                    mouseUp={this.mouseUp("fore")}
                   />
                 </Col>
                 <Col sm={6}>
@@ -59,6 +79,7 @@ export default class StealthField extends Component {
                     value={quadrants.port}
                     label="Port"
                     simulator={simulator}
+                    mouseUp={this.mouseUp("port")}
                   />
                 </Col>
               </Row>
@@ -124,6 +145,12 @@ export default class StealthField extends Component {
                       color="primary"
                       className="stealth-button"
                       block
+                      disabled={
+                        (damage && damage.damaged) ||
+                        (power &&
+                          power.powerLevels &&
+                          power.power < power.powerLevels[0])
+                      }
                       onClick={action}
                     >
                       Activate {name}
@@ -141,6 +168,7 @@ export default class StealthField extends Component {
                     value={quadrants.aft}
                     label="Aft"
                     simulator={simulator}
+                    mouseUp={this.mouseUp("aft")}
                   />
                 </Col>
                 <Col sm={6}>
@@ -149,6 +177,7 @@ export default class StealthField extends Component {
                     value={quadrants.starboard}
                     label="Starboard"
                     simulator={simulator}
+                    mouseUp={this.mouseUp("starboard")}
                   />
                 </Col>
               </Row>

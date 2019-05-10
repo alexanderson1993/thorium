@@ -11,7 +11,7 @@ import {
   Input
 } from "reactstrap";
 import MacroWrapper from "./MacroConfig";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import FontAwesome from "react-fontawesome";
 import { SortableContainer, SortableElement } from "react-sortable-hoc";
 import EventPicker from "./EventPicker";
@@ -102,7 +102,7 @@ export default class TimelineConfig extends Component {
           $missionId: ID
           $timelineStepId: ID!
           $timelineItemId: ID!
-          $timelineItem: TimelineitemInput!
+          $timelineItem: TimelineItemInput!
         ) {
           updateTimelineStepItem(
             simulatorId: $simulatorId
@@ -147,7 +147,7 @@ export default class TimelineConfig extends Component {
       variables: obj
     });
   }
-  _updateItem(type, e) {
+  _updateItem = (type, e) => {
     let obj = {
       timelineStepId: this.state.selectedTimelineStep,
       timelineItemId: this.state.selectedTimelineItem
@@ -172,7 +172,7 @@ export default class TimelineConfig extends Component {
           $missionId: ID
           $timelineStepId: ID!
           $timelineItemId: ID!
-          $timelineItem: TimelineitemInput!
+          $timelineItem: TimelineItemInput!
         ) {
           updateTimelineStepItem(
             simulatorId: $simulatorId
@@ -185,7 +185,7 @@ export default class TimelineConfig extends Component {
       `,
       variables: obj
     });
-  }
+  };
   _addTimelineStep = async inserted => {
     const name = prompt("What is the name of the timeline step?");
     const mutation = gql`
@@ -261,7 +261,7 @@ export default class TimelineConfig extends Component {
         $simulatorId: ID
         $missionId: ID
         $timelineStepId: ID!
-        $timelineItem: TimelineitemInput!
+        $timelineItem: TimelineItemInput!
       ) {
         addTimelineItemToTimelineStep(
           simulatorId: $simulatorId
@@ -516,9 +516,9 @@ export default class TimelineConfig extends Component {
           </Button>
         </Col>
         {this.state.selectedTimelineStep === "mission" && (
-          <div>
+          <Col sm={6}>
             <MissionConfig mission={object} updateMission={updateMission} />
-          </div>
+          </Col>
         )}
         {this.state.selectedTimelineStep &&
           this.state.selectedTimelineStep !== "mission" &&
@@ -577,7 +577,8 @@ export default class TimelineConfig extends Component {
                   <Label>Step Name</Label>
                   <Input
                     type="text"
-                    defaultValue={step.name}
+                    key={step.id}
+                    defaultValue={step && step.name}
                     onChange={this._updateStep.bind(this, "name")}
                   />
                 </FormGroup>
@@ -586,6 +587,7 @@ export default class TimelineConfig extends Component {
                   <Input
                     type="textarea"
                     rows={8}
+                    key={step.id}
                     defaultValue={step.description}
                     placeholder="Here is where you would explain what is going on during this part of the mission. This serves as your script, explaining what actions should be taken and where the story goes next."
                     onChange={this._updateStep.bind(this, "description")}
@@ -594,11 +596,13 @@ export default class TimelineConfig extends Component {
               </Col>
             );
           } else if (this.state.selectedTimelineItem) {
-            const item = object.timeline
-              .find(e => e.id === this.state.selectedTimelineStep)
-              .timelineItems.find(
-                t => t.id === this.state.selectedTimelineItem
-              );
+            const step = object.timeline.find(
+              e => e.id === this.state.selectedTimelineStep
+            );
+            if (!step) return null;
+            const item = step.timelineItems.find(
+              t => t.id === this.state.selectedTimelineItem
+            );
             if (!item) return null;
             return (
               <Col sm="6" key={item.id}>
@@ -609,8 +613,12 @@ export default class TimelineConfig extends Component {
                       <Label>Item Delay (in milliseconds)</Label>
                       <Input
                         type="number"
-                        value={item.delay}
-                        onChange={this._updateItem.bind(this, "delay")}
+                        defaultValue={item.delay}
+                        onBlur={e =>
+                          this._updateItem("delay", {
+                            target: { value: parseInt(e.target.value) }
+                          })
+                        }
                       />
                     </FormGroup>
                     <MacroWrapper

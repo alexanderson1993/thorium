@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import { Query, withApollo } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { Container, Row, Col, Button } from "reactstrap";
 import SubscriptionHelper from "helpers/subscriptionHelper";
 import Grid from "../Sensors/GridDom/grid";
@@ -23,48 +23,52 @@ function distance3d(coord2, coord1) {
   return Math.sqrt((x2 -= x1) * x2 + (y2 -= y1) * y2 + (z2 -= z1) * z2);
 }
 
-const contactsData = `
-id
-location {
-  x
-  y
-  z
-}
-destination {
-  x
-  y
-  z
-}
-position {
-  x
-  y
-  z
-}
-icon
-type
-destroyed
-startTime
-endTime
-speed
-particle
+const fragment = gql`
+  fragment ParticleDetectorCoreData on SensorContact {
+    id
+    location {
+      x
+      y
+      z
+    }
+    destination {
+      x
+      y
+      z
+    }
+    position {
+      x
+      y
+      z
+    }
+    icon
+    type
+    destroyed
+    startTime
+    endTime
+    speed
+    particle
+  }
 `;
 
 const QUERY = gql`
   query Particles($simulatorId: ID!) {
-    sensorContacts(simulatorId:$simulatorId, type:"particle") {
-      ${contactsData}
+    sensorContacts(simulatorId: $simulatorId, type: "particle") {
+      ...ParticleDetectorCoreData
     }
-    sensors(simulatorId:$simulatorId, domain:"external") {
+    sensors(simulatorId: $simulatorId, domain: "external") {
       id
     }
   }
+  ${fragment}
 `;
 const CONTACTS_SUB = gql`
   subscription SensorContactsChanged($simulatorId: ID) {
     sensorContactUpdate(simulatorId: $simulatorId, type: "particle") {
-      ${contactsData}
+      ...ParticleDetectorCoreData
     }
   }
+  ${fragment}
 `;
 
 class ParticleIcon extends Component {
@@ -141,7 +145,11 @@ class ParticleIcon extends Component {
 const ParticleIconData = withApollo(ParticleIcon);
 
 class ParticleLine extends Component {
-  state = { type: "Dilithium" };
+  state = {
+    type:
+      window.localStorage.getItem(`thorium_core_particle_${this.props.id}`) ||
+      "Dilithium"
+  };
   render() {
     const { icon } = this.props;
     const { type } = this.state;
@@ -149,7 +157,13 @@ class ParticleLine extends Component {
       <div style={{ display: "flex" }}>
         <select
           value={type}
-          onChange={e => this.setState({ type: e.target.value })}
+          onChange={e => {
+            this.setState({ type: e.target.value });
+            window.localStorage.setItem(
+              `thorium_core_particle_${this.props.id}`,
+              e.target.value
+            );
+          }}
         >
           {Object.keys(particleTypes).map(p => (
             <option key={p}>{p}</option>
@@ -162,8 +176,11 @@ class ParticleLine extends Component {
 }
 class ParticleDetectorCore extends Component {
   state = {};
+  mounted = false;
   componentDidMount() {
+    this.mounted = true;
     setTimeout(() => {
+      if (this.mounted === false) return;
       let dimensions = false;
       while (!dimensions) {
         const el = ReactDOM.findDOMNode(this);
@@ -176,6 +193,9 @@ class ParticleDetectorCore extends Component {
       }
       this.setState({ dimensions });
     }, 500);
+  }
+  componentWillUnmount() {
+    this.mounted = false;
   }
   mouseDown = (e, contact) => {
     this.downMouseTime = Date.now();
@@ -234,6 +254,7 @@ class ParticleDetectorCore extends Component {
     }));
   };
   triggerUpdate = speed => {
+    speed = Number(speed);
     const sensors = this.props.sensors;
     const { client } = this.props;
     const { draggingContacts, dimensions } = this.state;
@@ -381,6 +402,7 @@ class ParticleDetectorCore extends Component {
             {particleIcons.map(i => (
               <ParticleLine
                 key={`line-${i}`}
+                id={`line-${i}`}
                 icon={i}
                 dimensions={dimensions}
                 sensors={sensors}

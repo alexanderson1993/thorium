@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 import {
   Container,
@@ -18,6 +18,9 @@ import {
 import "./style.scss";
 import SubscriptionHelper from "helpers/subscriptionHelper";
 import { titleCase } from "change-case";
+import { FormattedMessage } from "react-intl";
+import Tour from "helpers/tourHelper";
+
 const MESSAGING_SUB = gql`
   subscription GotMessage($simulatorId: ID!, $station: String) {
     sendMessage(simulatorId: $simulatorId, station: $station) {
@@ -33,13 +36,62 @@ const MESSAGING_SUB = gql`
 
 const TEAMS_SUB = gql`
   subscription TeamsUpdate($simulatorId: ID) {
-    teamsUpdate(simulatorId: $simulatorId) {
+    teamsUpdate(simulatorId: $simulatorId, cleared: true) {
       id
       name
       type
+      cleared
     }
   }
 `;
+
+export const trainingSteps = [
+  {
+    selector: "#nothing",
+    content: (
+      <FormattedMessage
+        id="messages-training-1"
+        defaultMessage="Messaging allows you to send text messages between people within your ship."
+      />
+    )
+  },
+  {
+    selector: ".message-dropdown",
+    content: (
+      <FormattedMessage
+        id="messages-training-2"
+        defaultMessage="To send a message, click this button. A dropdown will appear showing you all of the options for places you can send your message."
+      />
+    )
+  },
+  {
+    selector: ".convoList",
+    content: (
+      <FormattedMessage
+        id="messages-training-3"
+        defaultMessage="This is your list of current conversations. Click on a conversation to see that conversation on the right side."
+      />
+    )
+  },
+  {
+    selector: ".messages-list",
+    content: (
+      <FormattedMessage
+        id="messages-training-4"
+        defaultMessage="The messages in the selected conversation appear here."
+      />
+    )
+  },
+  {
+    selector: ".text-input",
+    content: (
+      <FormattedMessage
+        id="messages-training-5"
+        defaultMessage="Type any message you want to send in this box. Press the enter key or the 'Send Message' button to send the message."
+      />
+    )
+  }
+];
 
 class Messaging extends Component {
   state = {
@@ -100,20 +152,29 @@ class Messaging extends Component {
     );
     const messageGroups = this.props.station.messageGroups;
     const { messageInput, stationsShown, selectedConversation } = this.state;
-    const convoObj = messages.reduce((prev, next) => {
-      if (next.sender === this.props.station.name) {
-        prev[next.destination] = Object.assign({}, next, {
-          convo: next.destination
-        });
-      } else if (messageGroups.indexOf(next.destination) > -1) {
-        prev[next.destination] = Object.assign({}, next, {
-          convo: next.destination
-        });
-      } else {
-        prev[next.sender] = Object.assign({}, next, { convo: next.sender });
-      }
-      return prev;
-    }, {});
+    const convoObj = messages
+      .filter(
+        m =>
+          !teams.find(
+            t =>
+              t.cleared === true &&
+              (t.name === m.sender || t.name === m.destination)
+          )
+      )
+      .reduce((prev, next) => {
+        if (next.sender === this.props.station.name) {
+          prev[next.destination] = Object.assign({}, next, {
+            convo: next.destination
+          });
+        } else if (messageGroups.indexOf(next.destination) > -1) {
+          prev[next.destination] = Object.assign({}, next, {
+            convo: next.destination
+          });
+        } else {
+          prev[next.sender] = Object.assign({}, next, { convo: next.sender });
+        }
+        return prev;
+      }, {});
     const conversations = Object.keys(convoObj)
       .map(c => convoObj[c])
       .sort((a, b) => {
@@ -186,7 +247,7 @@ class Messaging extends Component {
               ))}
             </Card>
             <ButtonDropdown
-              className="btn-block"
+              className="btn-block message-dropdown"
               isOpen={stationsShown}
               toggle={this.toggleStations}
               direction="up"
@@ -206,10 +267,9 @@ class Messaging extends Component {
                       {s.name}
                     </DropdownItem>
                   ))}
-                {messageGroups &&
-                  bridgeOfficerMessaging && (
-                    <DropdownItem disabled>--------------</DropdownItem>
-                  )}
+                {messageGroups && bridgeOfficerMessaging && (
+                  <DropdownItem disabled>--------------</DropdownItem>
+                )}
                 {messageGroups &&
                   messageGroups.map(g => (
                     <DropdownItem
@@ -222,6 +282,7 @@ class Messaging extends Component {
                 {teams &&
                   teams.filter(
                     t =>
+                      !t.cleared &&
                       messageGroups.findIndex(
                         m => m.toLowerCase().indexOf(t.type.toLowerCase()) > -1
                       ) > -1
@@ -232,6 +293,7 @@ class Messaging extends Component {
                   teams
                     .filter(
                       t =>
+                        !t.cleared &&
                         messageGroups.findIndex(
                           m =>
                             m.toLowerCase().indexOf(t.type.toLowerCase()) > -1
@@ -250,7 +312,7 @@ class Messaging extends Component {
               </DropdownMenu>
             </ButtonDropdown>
           </Col>
-          <Col sm={9}>
+          <Col sm={9} className="messages-list">
             <h4>Messages</h4>
 
             <Card>
@@ -279,6 +341,7 @@ class Messaging extends Component {
               </div>
             </Card>
             <form
+              className="text-input"
               // eslint-disable-next-line
               action={"javascript:void(0);"}
               onSubmit={this.sendMessage}
@@ -304,6 +367,7 @@ class Messaging extends Component {
             </form>
           </Col>
         </Row>
+        <Tour steps={trainingSteps} client={this.props.clientObj} />
       </Container>
     );
   }
@@ -319,10 +383,11 @@ const MESSAGING_QUERY = gql`
       simulatorId
       destination
     }
-    teams(simulatorId: $simulatorId) {
+    teams(simulatorId: $simulatorId, cleared: true) {
       id
       name
       type
+      cleared
     }
     simulators(id: $simId) {
       id

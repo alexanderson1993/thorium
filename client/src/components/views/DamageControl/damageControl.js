@@ -1,13 +1,22 @@
-import React, { Component } from "react";
+import React, { Fragment, Component } from "react";
 import { Container, Row, Col, Button, Card, CardBody } from "reactstrap";
 import Tour from "helpers/tourHelper";
 import FontAwesome from "react-fontawesome";
 import { Mutation, withApollo } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { FormattedMessage } from "react-intl";
+import ReportView from "./reportView";
 
 import "./style.scss";
 
+function systemClasses(s, selected) {
+  const task = s.tasks ? s.tasks.find(t => !t.verified) || {} : {};
+  return `${selected ? "selected" : ""} ${
+    s.damage && s.damage.requested ? "requested" : ""
+  } ${s.damage ? (s.damage.report ? "report" : "") : "report"} ${
+    (s.damage ? s.damage.validate : task.verifyRequested) ? "validate" : ""
+  } ${s.damage && s.damage.destroyed ? "destroyed" : ""}`;
+}
 class DamageControl extends Component {
   state = {
     selectedSystem: null,
@@ -32,7 +41,7 @@ class DamageControl extends Component {
           content: (
             <FormattedMessage
               id="damage-report-rnd-training-2"
-              defaultMessage="If a research and development report hasn't been calculated, you need to request a report by clicking on this button."
+              defaultMessage="If a research and development report hasn't been compiled, you need to request a report by clicking on this button."
             />
           )
         },
@@ -41,7 +50,7 @@ class DamageControl extends Component {
           content: (
             <FormattedMessage
               id="damage-report-rnd-training-3"
-              defaultMessage="When a system may be upgraded, instructions to perform the upgrade will appear here. Follow them exactly."
+              defaultMessage="When a system may be upgraded instructions to perform the upgrade will appear here. Follow them exactly."
             />
           )
         },
@@ -62,7 +71,7 @@ class DamageControl extends Component {
         content: (
           <FormattedMessage
             id="damage-report-training-1"
-            defaultMessage="The ship’s systems are intelligent enough to know when they’re damaged, and to understand (mostly) how they can be fixed. A list of damaged systems appears here. Click a system to see the damage report"
+            defaultMessage="The ship’s systems are intelligent enough to know when they’re damaged, and to understand generally how they can be fixed. A list of damaged systems appears here. Click a system to see the damage report"
           />
         )
       },
@@ -71,7 +80,7 @@ class DamageControl extends Component {
         content: (
           <FormattedMessage
             id="damage-report-training-2"
-            defaultMessage="If a damage report hasn't been calculated, you need to request a damage report by clicking on this button."
+            defaultMessage="If a damage report hasn't been compiled, you need to request a damage report by clicking on this button."
           />
         )
       },
@@ -89,7 +98,7 @@ class DamageControl extends Component {
         content: (
           <FormattedMessage
             id="damage-report-training-4"
-            defaultMessage="Sometimes, a system needs a reactivation code to be entered before it can be repaired. Click the 'Enter Reactivation Code' button, then press the symbols listed in your damage report. Once the reactivation code is accepted, the system will be repaired."
+            defaultMessage="Occasionally a system needs a reactivation code to be entered before it can be repaired. Click the 'Enter Reactivation Code' button, then press the symbols listed in your damage report. Once the reactivation code is accepted, the system will be repaired."
           />
         )
       }
@@ -99,16 +108,17 @@ class DamageControl extends Component {
     if (sys.type === "Shield") {
       return `${sys.name} Shields`;
     }
-    if (sys.type === "Engine") {
-      return `${sys.name} Engines`;
-    }
-    return sys.name;
+
+    return sys.displayName || sys.name;
   }
   selectSystem(id) {
-    const selectedSystem = this.props.systems.find(s => s.id === id);
+    const { systems, taskReports } = this.props;
+    const systemObj = systems.find(s => s.id === id);
+    const taskReport = taskReports.find(t => t.id === id);
+    const system = taskReport ? taskReport.system : systemObj;
     this.setState({
       selectedSystem: id,
-      codeEntry: selectedSystem.damage.reactivationCode || ""
+      codeEntry: system.damage.reactivationCode || ""
     });
   }
   toggle = () => {
@@ -134,14 +144,7 @@ class DamageControl extends Component {
       codeEntry: ""
     });
   };
-  damageReportText = (system, steps, stepDamage) => {
-    if (system) {
-      if (stepDamage) {
-        return steps[system.damage.currentStep || 0];
-      }
-      return system.damage.report;
-    }
-  };
+
   reactivateCode = () => {
     this.toggle();
     const mutation = gql`
@@ -157,8 +160,14 @@ class DamageControl extends Component {
         )
       }
     `;
+    const { systems = [], taskReports = [] } = this.props;
+    const system = systems.find(s => s.id === this.state.selectedSystem);
+
+    const taskReport = taskReports.find(
+      s => s.id === this.state.selectedSystem
+    );
     const variables = {
-      systemId: this.state.selectedSystem,
+      systemId: system ? system.id : taskReport && taskReport.system.id,
       code: this.state.codeEntry,
       station: this.props.station.name
     };
@@ -167,49 +176,61 @@ class DamageControl extends Component {
       variables
     });
   };
-  setStep = step => {
-    const mutation = gql`
-      mutation SetDamageStep($systemId: ID!, $step: Int!) {
-        updateCurrentDamageStep(systemId: $systemId, step: $step)
-      }
-    `;
-    const variables = {
-      systemId: this.state.selectedSystem,
-      step: Math.max(0, step)
-    };
-    this.props.client.mutate({
-      mutation,
-      variables
-    });
-  };
-  verifyStep = () => {
-    const mutation = gql`
-      mutation SetDamageStepValidation($id: ID!) {
-        setDamageStepValidation(id: $id, validation: true)
-      }
-    `;
-    const variables = {
-      id: this.state.selectedSystem
-    };
-    this.props.client.mutate({
-      mutation,
-      variables
-    });
-  };
+
   render() {
     const { selectedSystem, reactivationCodeModal, codeEntry } = this.state;
-    const { systems, stepDamage, verifyStep, which } = this.props;
+    const {
+      systems = [],
+      stepDamage,
+      verifyStep,
+      which,
+      taskReports = []
+    } = this.props;
     const damagedSystem = systems.find(s => selectedSystem === s.id) || {
+      ...taskReports.find(s => s.id === selectedSystem),
       damage: {}
     };
     const system =
-      selectedSystem && systems
-        ? systems.find(s => s.id === selectedSystem)
-        : null;
-    const report = system ? system.damage.report : "";
-    const steps = report
-      ? report.split(/Step [0-9]+:\n/gi).filter(s => s && s !== "\n")
-      : [];
+      (selectedSystem && systems.find(s => s.id === selectedSystem)) ||
+      taskReports.find(s => s.id === selectedSystem);
+
+    const reportList = systems
+      .filter(
+        s => s.damage.damaged && !taskReports.find(t => t.system.id === s.id)
+      )
+      .map(s => ({
+        ...s,
+        className: systemClasses(s, selectedSystem === s.id),
+        type: "legacy",
+        onClick: s.damage.destroyed ? () => {} : () => this.selectSystem(s.id),
+        name: this.systemName(s),
+        children: (
+          <Fragment>
+            {s.damage.validate ? <FontAwesome name="refresh" spin /> : null}{" "}
+            {this.systemName(s)}
+          </Fragment>
+        )
+      }))
+      .concat(
+        taskReports.map(t => {
+          const task = t.tasks ? t.tasks.find(tt => !tt.verified) || {} : {};
+          return {
+            ...t,
+            className: systemClasses(t, selectedSystem === t.id),
+            type: "task",
+            onClick: () => this.selectSystem(t.id),
+            children: (
+              <Fragment>
+                {task.verifyRequested ? (
+                  <FontAwesome name="refresh" spin />
+                ) : null}{" "}
+                {t.name}
+              </Fragment>
+            )
+          };
+        })
+      );
+
     return (
       <Container fluid className="damage-control">
         <Row>
@@ -266,7 +287,7 @@ class DamageControl extends Component {
                         >
                           <FormattedMessage
                             id="damage-report-cancel"
-                            description="A button to stop entering a reactivation code"
+                            description="A button to stop entering a reactivation code."
                             defaultMessage="Cancel"
                           />
                         </Button>
@@ -279,7 +300,7 @@ class DamageControl extends Component {
                         >
                           <FormattedMessage
                             id="damage-report-clear"
-                            description="A button to clear the reactivation code input"
+                            description="A button to clear the reactivation code input."
                             defaultMessage="Clear"
                           />
                         </Button>
@@ -287,28 +308,7 @@ class DamageControl extends Component {
                     </Row>
                   </div>
                 ) : (
-                  systems.filter(s => s.damage.damaged).map(s => (
-                    <p
-                      key={s.id}
-                      className={`${
-                        selectedSystem === s.id ? "selected" : ""
-                      } ${s.damage.requested ? "requested" : ""} ${
-                        s.damage.report ? "report" : ""
-                      } ${s.damage.validate ? "validate" : ""} ${
-                        s.damage.destroyed ? "destroyed" : ""
-                      }`}
-                      onClick={
-                        s.damage.destroyed
-                          ? () => {}
-                          : () => this.selectSystem(s.id)
-                      }
-                    >
-                      {s.damage.validate ? (
-                        <FontAwesome name="refresh" spin />
-                      ) : null}{" "}
-                      {this.systemName(s)}
-                    </p>
-                  ))
+                  reportList.map(s => <p key={s.id} {...s} />)
                 )}
               </CardBody>
             </Card>
@@ -321,7 +321,7 @@ class DamageControl extends Component {
               >
                 <FormattedMessage
                   id="damage-report-reactivate"
-                  description="A button to confirm the entered reactivation code and begin the reactivation process"
+                  description="A button to confirm the entered reactivation code and begin the reactivation process."
                   defaultMessage="Reactivate"
                 />
               </Button>
@@ -347,19 +347,19 @@ class DamageControl extends Component {
                     {which === "rnd" ? (
                       <FormattedMessage
                         id="rnd-report-request"
-                        description="A button to request a report for a system"
+                        description="A button to request a report for a system."
                         defaultMessage="Request Report"
                       />
                     ) : which === "engineering" ? (
                       <FormattedMessage
                         id="engineering-report-request"
-                        description="A button to request a report for a system"
+                        description="A button to request a report for a system."
                         defaultMessage="Request Engineering Report"
                       />
                     ) : (
                       <FormattedMessage
                         id="damage-report-request"
-                        description="A button to request a repair report for a damaged system"
+                        description="A button to request a repair report for a damaged system."
                         defaultMessage="Request Damage Report"
                       />
                     )}
@@ -367,134 +367,24 @@ class DamageControl extends Component {
                 )}
               </Mutation>
             )}
-            {damagedSystem.damage.neededReactivationCode && (
-              <Card
-                className="reactivation-code-entry"
+            {(damagedSystem.damage.neededReactivationCode ||
+              damagedSystem.tasks) && (
+              <Button
+                block
+                color="primary"
                 onClick={reactivationCodeModal ? () => {} : this.toggle}
               >
-                <CardBody>
-                  <p className={`${codeEntry ? "code-entry" : ""}`}>
-                    {codeEntry ? codeEntry : "Enter Reactivation Code..."}
-                  </p>
-                </CardBody>
-              </Card>
+                {codeEntry ? codeEntry : "Enter Reactivation Code..."}
+              </Button>
             )}
           </Col>
           <Col sm="9" className="damage-report">
-            <Row>
-              <Col sm={12}>
-                <h4>
-                  {which === "rnd" ? (
-                    <FormattedMessage
-                      id="damage-report-rnd-report"
-                      description="A header for the research & development report readout"
-                      defaultMessage="R&D Report"
-                    />
-                  ) : which === "engineering" ? (
-                    <FormattedMessage
-                      id="engineering-report-report"
-                      description="A header for the engineering report readout"
-                      defaultMessage="Engineering Report"
-                    />
-                  ) : (
-                    <FormattedMessage
-                      id="damage-report-report"
-                      description="A header for the damage report readout"
-                      defaultMessage="Damage Report"
-                    />
-                  )}
-                </h4>
-                <Card>
-                  <CardBody>
-                    <p
-                      className="damageReport-text"
-                      style={{ fontSize: "24px" }}
-                    >
-                      {this.damageReportText(system, steps, stepDamage)}
-                    </p>
-                  </CardBody>
-                </Card>
-              </Col>
-            </Row>
-            {stepDamage && (
-              <Row>
-                <Col sm={3}>
-                  {!verifyStep && (
-                    <Button
-                      disabled={!system || system.damage.currentStep === 0}
-                      block
-                      color="secondary"
-                      onClick={() =>
-                        this.setStep(system.damage.currentStep - 1)
-                      }
-                    >
-                      <FormattedMessage
-                        id="damage-report-previous"
-                        description="A button to go to the previous step"
-                        defaultMessage="Previous Step"
-                      />
-                    </Button>
-                  )}
-                </Col>
-                <Col sm={6}>
-                  <h3 className="text-center">
-                    {system &&
-                    (system.damage.damageReportText || system.damage.report)
-                      ? system.damage.currentStep + 1
-                      : 0}{" "}
-                    / {steps.length}
-                  </h3>
-                </Col>
-                <Col sm={3}>
-                  {verifyStep ? (
-                    <Button
-                      disabled={
-                        !system ||
-                        steps.length === 0 ||
-                        system.damage.currentStep === steps.length - 1 ||
-                        system.damage.validate
-                      }
-                      block
-                      color="secondary"
-                      onClick={this.verifyStep}
-                    >
-                      {system && system.damage.validate ? (
-                        <FormattedMessage
-                          id="damage-report-verifying"
-                          description="A message indicating that the damage report step is currently being verified"
-                          defaultMessage="Verifying Step"
-                        />
-                      ) : (
-                        <FormattedMessage
-                          id="damage-report-verify"
-                          description="A button to initiate verification of the damage report step to ensure it was completed correctly"
-                          defaultMessage="Verify Step"
-                        />
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      disabled={
-                        !system ||
-                        steps.length === 0 ||
-                        system.damage.currentStep === steps.length - 1
-                      }
-                      block
-                      color="secondary"
-                      onClick={() =>
-                        this.setStep(system.damage.currentStep + 1)
-                      }
-                    >
-                      <FormattedMessage
-                        id="damage-report-next"
-                        description="A button to go to the next step"
-                        defaultMessage="Next Step"
-                      />
-                    </Button>
-                  )}
-                </Col>
-              </Row>
-            )}
+            <ReportView
+              system={system}
+              stepDamage={stepDamage}
+              verifyStep={verifyStep}
+              type={system && system.tasks ? "task" : "legacy"}
+            />
           </Col>
         </Row>
 

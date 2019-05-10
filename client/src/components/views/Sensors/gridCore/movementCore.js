@@ -3,7 +3,7 @@ import { DraggableCore } from "react-draggable";
 import { Button } from "reactstrap";
 import distance from "helpers/distance";
 import { throttle } from "helpers/debounce";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 
 export default class MovementCore extends PureComponent {
   constructor(props) {
@@ -46,8 +46,8 @@ export default class MovementCore extends PureComponent {
       } = node.offsetParent.getBoundingClientRect();
       switch (handlerName) {
         case "onDrag":
-          const clientX = e.clientX || e.touches[0].clientX;
-          const clientY = e.clientY || e.touches[0].clientY;
+          const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+          const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
 
           newPosition.left = ((left + width / 2 - clientX) / width) * -1 * 2;
           newPosition.top = ((top + height / 2 - clientY) / width) * -1 * 2;

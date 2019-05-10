@@ -1,15 +1,35 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo, Mutation } from "react-apollo";
 import { Table, Button } from "reactstrap";
 import { InputField, OutputField } from "../../generic/core";
 import SubscriptionHelper from "helpers/subscriptionHelper";
+
+const fragment = gql`
+  fragment PowerData on Reactor {
+    id
+    type
+    model
+    efficiency
+    displayName
+    powerOutput
+  }
+`;
+const REACTOR_SUB = gql`
+  subscription ReactorsUpdate($simulatorId: ID!) {
+    reactorUpdate(simulatorId: $simulatorId) {
+      ...PowerData
+    }
+  }
+  ${fragment}
+`;
 
 const SYSTEMS_SUB = gql`
   subscription SystemsUpdate($simulatorId: ID) {
     systemsUpdate(simulatorId: $simulatorId) {
       id
       name
+      displayName
       power {
         power
         powerLevels
@@ -52,6 +72,15 @@ class DamageControlCore extends Component {
     ) {
       obj.color = "#888";
     }
+    // Overloaded the power levels
+    if (
+      sys.power &&
+      sys.power.powerLevels &&
+      sys.power.powerLevels.length > 0 &&
+      sys.power.powerLevels[sys.power.powerLevels.length - 1] < sys.power.power
+    ) {
+      obj.color = "goldenrod";
+    }
     if (sys.damage.damaged) {
       obj.color = "red";
     }
@@ -74,10 +103,7 @@ class DamageControlCore extends Component {
     if (sys.type === "Shield") {
       return `${sys.name} Shields`;
     }
-    if (sys.type === "Engine") {
-      return `${sys.name} Engines`;
-    }
-    return sys.name;
+    return sys.displayName || sys.name;
   }
   setPower(system, power) {
     const mutation = gql`
@@ -94,6 +120,23 @@ class DamageControlCore extends Component {
       variables
     });
   }
+  setPowerOutput = output => {
+    if ((!output || !parseFloat(output)) && output !== "0") return;
+    const reactor = this.props.data.reactors.find(r => r.model === "reactor");
+    const mutation = gql`
+      mutation ReactorPowerLevel($id: ID!, $output: Int!) {
+        reactorChangeOutput(id: $id, output: $output)
+      }
+    `;
+    const variables = {
+      id: reactor.id,
+      output: parseInt(output, 10)
+    };
+    this.props.client.mutate({
+      mutation,
+      variables
+    });
+  };
   toggleDamage = (e, system, destroyed = false, which) => {
     e.preventDefault();
     const variables = {
@@ -151,7 +194,13 @@ class DamageControlCore extends Component {
     this.setState({ context: null });
   };
   render() {
-    if (this.props.data.loading || !this.props.data.systems) return null;
+    if (
+      this.props.data.loading ||
+      !this.props.data.systems ||
+      !this.props.data.reactors
+    )
+      return null;
+    const reactor = this.props.data.reactors.find(r => r.model === "reactor");
     return (
       <Mutation
         mutation={gql`
@@ -174,6 +223,21 @@ class DamageControlCore extends Component {
                     updateQuery: (previousResult, { subscriptionData }) => {
                       return Object.assign({}, previousResult, {
                         systems: subscriptionData.data.systemsUpdate
+                      });
+                    }
+                  })
+                }
+              />
+              <SubscriptionHelper
+                subscribe={() =>
+                  this.props.data.subscribeToMore({
+                    document: REACTOR_SUB,
+                    variables: {
+                      simulatorId: this.props.simulator.id
+                    },
+                    updateQuery: (previousResult, { subscriptionData }) => {
+                      return Object.assign({}, previousResult, {
+                        reactors: subscriptionData.data.reactorUpdate
                       });
                     }
                   })
@@ -260,7 +324,16 @@ class DamageControlCore extends Component {
                 <tr>
                   <td>Total</td>
                   <td>
-                    <OutputField>
+                    <OutputField
+                      alert={
+                        Math.round(reactor.powerOutput * reactor.efficiency) <
+                        this.props.data.systems.reduce(
+                          (prev, next) =>
+                            next.power ? prev + next.power.power : prev,
+                          0
+                        )
+                      }
+                    >
                       {this.props.data.systems.reduce(
                         (prev, next) =>
                           next.power ? prev + next.power.power : prev,
@@ -268,21 +341,25 @@ class DamageControlCore extends Component {
                       )}
                     </OutputField>
                   </td>
-                  <td>/</td>
+                  <td>{reactor && "/"}</td>
                   <td>
-                    <OutputField>
-                      {this.props.data.systems.reduce(
-                        (prev, next) =>
-                          next.power &&
-                          next.power.powerLevels &&
-                          next.power.powerLevels[0]
-                            ? prev + next.power.powerLevels[0]
-                            : prev,
-                        0
-                      )}
-                    </OutputField>
+                    {reactor && (
+                      <OutputField title="Reactor Output">
+                        {Math.round(reactor.powerOutput * reactor.efficiency)}
+                      </OutputField>
+                    )}
                   </td>
-                  <td />
+                  <td>
+                    {reactor && (
+                      <InputField
+                        title="Reactor Power Level"
+                        prompt="What is the new power output?"
+                        onClick={this.setPowerOutput}
+                      >
+                        {reactor.powerOutput}
+                      </InputField>
+                    )}
+                  </td>
                 </tr>
                 <tr>
                   <td colSpan={5}>Right-Click for options</td>
@@ -337,9 +414,13 @@ class DamageControlCore extends Component {
 }
 const SYSTEMS_QUERY = gql`
   query Systems($simulatorId: ID) {
+    reactors(simulatorId: $simulatorId) {
+      ...PowerData
+    }
     systems(simulatorId: $simulatorId) {
       id
       name
+      displayName
       power {
         power
         powerLevels
@@ -354,6 +435,7 @@ const SYSTEMS_QUERY = gql`
       type
     }
   }
+  ${fragment}
 `;
 
 export default graphql(SYSTEMS_QUERY, {

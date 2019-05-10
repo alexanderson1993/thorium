@@ -2,7 +2,6 @@
 // we have to manually keep a list of layouts.
 export default [
   "LayoutCorners",
-  "LayoutDefault",
   "LayoutJr",
   "LayoutOdyssey",
   "LayoutGlass",
@@ -11,5 +10,6 @@ export default [
   "LayoutPhoenix",
   "LayoutShipStation",
   "LayoutEpsilon",
-  "LayoutBlack"
+  "LayoutBlack",
+  "LayoutClear"
 ];

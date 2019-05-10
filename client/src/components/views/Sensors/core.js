@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { OutputField, TypingField } from "../../generic/core";
 import { Button, Container, Row, Col } from "reactstrap";
 import { graphql, withApollo } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import FontAwesome from "react-fontawesome";
 import ScanPresets from "./ScanPresets";
 import { subscribe } from "helpers/pubsub";
@@ -65,6 +65,29 @@ class SensorsCore extends Component {
     document.removeEventListener("keydown", this.keypress);
     this.sensorDataBox && this.sensorDataBox();
   }
+  componentDidUpdate(prevProps) {
+    if (
+      prevProps.data.loading ||
+      this.props.data.loading ||
+      !this.props.data.sensors
+    )
+      return;
+    const external = this.props.data.sensors.find(s => s.domain === "external");
+    const internal = this.props.data.sensors.find(s => s.domain === "internal");
+    const sensor = this.state.domain === "external" ? external : internal;
+    const oldExternal = prevProps.data.sensors.find(
+      s => s.domain === "external"
+    );
+    const oldInternal = prevProps.data.sensors.find(
+      s => s.domain === "internal"
+    );
+    const oldSensor =
+      this.state.domain === "external" ? oldExternal : oldInternal;
+    if (sensor.scanResults !== oldSensor.scanResults)
+      this.setState({
+        dataField: sensor.scanResults
+      });
+  }
   keypress = evt => {
     if (evt.altKey) {
       evt.preventDefault();
@@ -78,7 +101,7 @@ class SensorsCore extends Component {
   sendScanResult = sensors => {
     let mutation;
     let variables;
-    if (sensors.history) {
+    if (sensors.history && this.state.selectedScan !== "basic-scan") {
       if (!this.state.selectedScan) return;
       mutation = gql`
         mutation ScanResponse($id: ID!, $scan: SensorScanInput!) {
@@ -262,8 +285,24 @@ class SensorsCore extends Component {
         <div style={fieldStyle}>
           <Row style={{ flex: 1 }}>
             {sensor.history && (
-              <Col sm={4}>
+              <Col sm={4} style={{ height: "100%" }}>
                 <div className="scan-list">
+                  {sensor.scanning && (
+                    <p
+                      className={`${
+                        selectedScan === "basic-scan" ? "selected" : ""
+                      }`}
+                      onClick={() =>
+                        this.selectScan({
+                          id: "basic-scan",
+                          request: sensor.scanRequest
+                        })
+                      }
+                    >
+                      {sensor.scanRequest.substr(0, 15)}
+                      ... <FontAwesome name="refresh" spin />
+                    </p>
+                  )}
                   {sensor.scans
                     .concat()
                     .reverse()
@@ -292,10 +331,15 @@ class SensorsCore extends Component {
             >
               <OutputField
                 style={{ flexGrow: 2, minHeight: "44px" }}
-                alert={sensor.history ? scan && scan.scanning : sensor.scanning}
+                alert={
+                  sensor.history
+                    ? (scan && scan.scanning) ||
+                      (selectedScan === "basic-scan" && sensor.scanning)
+                    : sensor.scanning
+                }
               >
                 {(() => {
-                  if (sensor.history) {
+                  if (sensor.history && selectedScan !== "basic-scan") {
                     if (scan) {
                       const date = new Date(scan.timestamp);
                       return (

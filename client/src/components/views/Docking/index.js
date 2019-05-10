@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Container, Row, Col, Button } from "reactstrap";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 import { Clamps, Ramps, Doors } from "./graphics";
 import Tour from "helpers/tourHelper";
@@ -145,7 +145,7 @@ class Docking extends Component {
               </Button>
             </div>
           </Col>
-          <Col className="graphics" sm={{ size: 2, offset: 2 }}>
+          <Col className="graphics" sm={{ size: 5, offset: 2 }}>
             {graphic === "clamps" && <Clamps transform={clamps} />}
             {graphic === "ramps" && <Ramps transform={ramps} />}
             {graphic === "doors" && <Doors transform={airlock} />}

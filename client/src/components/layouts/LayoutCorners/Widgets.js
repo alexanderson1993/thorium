@@ -2,9 +2,10 @@ import React, { Component } from "react";
 import { Tooltip, Button } from "reactstrap";
 import { Widgets } from "components/views";
 import FontAwesome from "react-fontawesome";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { withApollo } from "react-apollo";
 import Measure from "react-measure";
+import { subscribe } from "helpers/pubsub";
 
 import Tour from "helpers/tourHelper";
 import "./widgets.scss";
@@ -55,6 +56,7 @@ class WidgetsContainer extends Component {
 
     return (
       <div
+        style={{ zIndex: 500000 }}
         className={`widgets ${clientObj.loginState} ${
           clientObj.offlineState ? "offline" : ""
         }`}
@@ -77,10 +79,6 @@ class WidgetsContainer extends Component {
           station.widgets
             .concat()
             .filter(w => (touch ? w !== "keyboard" : true))
-            .sort(w => {
-              if (w === "keyboard") return 1;
-              return -1;
-            })
             .map(key => {
               const widget = Widgets[key];
               return (
@@ -110,6 +108,16 @@ export class Widget extends Component {
     widgetNotifications: {},
     position: { x: 0, y: 0 }
   };
+  componentDidMount() {
+    this.widgetOpenSub = subscribe("widgetOpen", widgetName => {
+      if (widgetName === this.props.wkey) {
+        this.setState({ modal: true });
+      }
+    });
+  }
+  componentWillUnmount() {
+    this.widgetOpenSub && this.widgetOpenSub();
+  }
   mouseDown = evt => {
     this.setState(
       {

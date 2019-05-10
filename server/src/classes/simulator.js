@@ -2,6 +2,7 @@ import uuid from "uuid";
 import App from "../app";
 import Team from "./teams";
 import DamageStep from "./generic/damageStep";
+import DamageTask from "./generic/damageTask";
 import { Station } from "./stationSet";
 class Ambiance {
   constructor(params = {}) {
@@ -32,7 +33,7 @@ class Lighting {
     this.transitionDuration = params.transitionDuration || 1000;
 
     // If it's null, use the alert color
-    this.useAlertColor = params.useAlertColor || true;
+    this.useAlertColor = params.useAlertColor === false ? false : true;
     this.color = params.color || null;
   }
   update({ intensity, action, actionStrength, transitionDuration, color }) {
@@ -97,7 +98,7 @@ export default class Simulator {
   constructor(params = {}) {
     this.id = params.id || uuid.v4();
     this.name = params.name || "Simulator";
-    this.layout = params.layout || "LayoutDefault";
+    this.layout = params.layout || "LayoutCorners";
     this.caps = params.caps || false;
     this.alertLevel = params.alertLevel || "5";
     this.alertLevelLock = params.alertLevelLock || false;
@@ -117,6 +118,11 @@ export default class Simulator {
     this.training = params.training || false;
     this.ship = new Ship({ ...params.ship });
     this.panels = params.panels || [];
+    this.commandLines = params.commandLines || [];
+    this.triggers = params.triggers || [];
+    this.triggersPaused = params.triggersPaused || false;
+    this.interfaces = params.interfaces || [];
+
     params.stations &&
       params.stations.forEach(s => this.stations.push(new Station(s)));
     // Effects Control
@@ -128,9 +134,10 @@ export default class Simulator {
     if (params.teams) {
       params.teams.forEach(t => this.teams.push(new Team(t)));
     }
+    this.hasPrinter = params.hasPrinter === false ? false : true;
 
     // Damage reports
-    this.stepDamage = params.stepDamage || true;
+    this.stepDamage = params.stepDamage === false ? false : true;
     this.verifyStep = params.verifyStep || false;
     this.requiredDamageSteps = [];
     this.optionalDamageSteps = [];
@@ -142,6 +149,14 @@ export default class Simulator {
       params.optionalDamageSteps.forEach(s =>
         this.optionalDamageSteps.push(new DamageStep(s))
       );
+
+    // Task-based damage reports
+    this.damageTasks = [];
+    params.damageTasks &&
+      params.damageTasks.forEach(s => this.damageTasks.push(new DamageTask(s)));
+
+    // For Space EdVentures
+    this.spaceEdventuresId = params.spaceEdventuresId || null;
   }
   get alertlevel() {
     const stealthField = App.systems.find(
@@ -165,7 +180,7 @@ export default class Simulator {
   rename(name) {
     this.name = name;
   }
-  setAlertLevel(alertlevel) {
+  setAlertLevel(alertlevel = "5") {
     if (["5", "4", "3", "2", "1", "p"].indexOf(alertlevel) === -1) {
       throw new Error(
         "Invalid Alert Level. Must be one of '5','4','3','2','1','p'"
@@ -238,6 +253,25 @@ export default class Simulator {
   updatePanels(panels) {
     this.panels = panels || [];
   }
+  updateCommandLines(commandLines) {
+    this.commandLines = commandLines || [];
+  }
+  updateTriggers(triggers) {
+    this.triggers = triggers || [];
+  }
+  setTriggersPaused(paused) {
+    this.triggersPaused = paused;
+  }
+  updateInterfaces(interfaces) {
+    this.interfaces = interfaces || [];
+  }
+  setAssets(assets) {
+    this.assets = new Assets(assets);
+  }
+  setHasPrinter(hasPrinter) {
+    this.hasPrinter = hasPrinter;
+  }
+
   // Damage Steps
   addDamageStep({ name, args, type }) {
     this[`${type}DamageSteps`].push(new DamageStep({ name, args }));
@@ -257,7 +291,25 @@ export default class Simulator {
       s => s.id !== stepId
     );
   }
-  setAssets(assets) {
-    this.assets = new Assets(assets);
+
+  // Damage Tasks
+  // As a side note, can I just say how much more elegant
+  // the damage tasks system is already? Look at this!
+  // It's much simpler. Why didn't I do it this
+  // way in the first place? ~A
+  addDamageTask(task) {
+    if (!task || !task.id || this.damageTasks.find(t => t.id === task.id))
+      return;
+    this.damageTasks.push(new DamageTask(task));
+  }
+  updateDamageTask(task) {
+    this.damageTasks.find(t => t.id === task.id).update(task);
+  }
+  removeDamageTask(id) {
+    this.damageTasks = this.damageTasks.filter(t => t.id !== id);
+  }
+
+  setSpaceEdventuresId(id) {
+    this.spaceEdventuresId = id;
   }
 }

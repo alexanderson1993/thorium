@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Button } from "reactstrap";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { SortableContainer, SortableElement } from "react-sortable-hoc";
 import TacticalMapList from "./tacticalMapList";
 
@@ -34,62 +34,6 @@ const SortableList = SortableContainer(
 );
 
 export default class Sidebar extends Component {
-  addTactical = () => {
-    const { selectTactical } = this.props;
-    const name = prompt("What is the name of the new tactical map?");
-    if (name) {
-      const mutation = gql`
-        mutation NewTactical($name: String!) {
-          newTacticalMap(name: $name)
-        }
-      `;
-      const variables = { name };
-      this.props.client
-        .mutate({
-          mutation,
-          variables
-        })
-        .then(res =>
-          setTimeout(() => selectTactical(res.data.newTacticalMap), 300)
-        );
-    }
-  };
-  duplicateTactical = () => {
-    const name = prompt("What is the name for the duplicated tactical map?");
-    if (name) {
-      const mutation = gql`
-        mutation DuplicateTactical($id: ID!, $name: String!) {
-          duplicateTacticalMap(id: $id, name: $name)
-        }
-      `;
-      const variables = {
-        name,
-        id: this.props.tacticalMapId
-      };
-      this.props.client.mutate({
-        mutation,
-        variables
-      });
-    }
-  };
-  removeTactical = () => {
-    if (window.confirm("Are you sure you want to delete this tactical?")) {
-      const mutation = gql`
-        mutation RemoveMap($id: ID!) {
-          removeTacticalMap(id: $id)
-        }
-      `;
-      const variables = {
-        id: this.props.tacticalMapId
-      };
-      this.props.deselectTactical();
-      this.props.client.mutate({
-        mutation,
-        variables,
-        refetchQueries: ["TacticalMap"]
-      });
-    }
-  };
   addLayer = () => {
     const name = prompt("What is the name of the new layer?");
     if (name) {
@@ -173,6 +117,7 @@ export default class Sidebar extends Component {
       layerId,
       tacticalMap,
       selectTactical,
+      deselectTactical,
       selectLayer,
       flightId,
       dedicated
@@ -183,47 +128,48 @@ export default class Sidebar extends Component {
           flightId={flightId}
           tacticalMapId={tacticalMapId}
           selectTactical={selectTactical}
+          deselectTactical={deselectTactical}
           dedicated={dedicated}
+          client={this.props.client}
         />
 
-        {tacticalMapId &&
-          tacticalMap && (
-            <div>
-              <h3>{tacticalMap.name}</h3>
-              <p>Layers</p>
-              <div className="layer-list">
-                <SortableList
-                  items={tacticalMap.layers}
-                  onSortEnd={this.onSortEnd}
-                  selectedLayer={layerId}
-                  selectLayer={l => selectLayer(l.id)}
-                />
-              </div>
-
-              <Button color="success" size="sm" onClick={this.addLayer}>
-                Add Layer
-              </Button>
-              <Button
-                color="warning"
-                size="sm"
-                onClick={this.removeLayer}
-                disabled={!layerId}
-              >
-                Remove Layer
-              </Button>
-              <Button color="danger" size="sm" onClick={this.clearTactical}>
-                Clear Tactical
-              </Button>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={tacticalMap.frozen}
-                  onChange={this.freezeTactical}
-                />{" "}
-                Frozen
-              </label>
+        {tacticalMapId && tacticalMap && (
+          <div>
+            <h3>{tacticalMap.name}</h3>
+            <p>Layers</p>
+            <div className="layer-list">
+              <SortableList
+                items={tacticalMap.layers}
+                onSortEnd={this.onSortEnd}
+                selectedLayer={layerId}
+                selectLayer={l => selectLayer(l.id)}
+              />
             </div>
-          )}
+
+            <Button color="success" size="sm" onClick={this.addLayer}>
+              Add Layer
+            </Button>
+            <Button
+              color="warning"
+              size="sm"
+              onClick={this.removeLayer}
+              disabled={!layerId}
+            >
+              Remove Layer
+            </Button>
+            <Button color="danger" size="sm" onClick={this.clearTactical}>
+              Clear Tactical
+            </Button>
+            <label>
+              <input
+                type="checkbox"
+                checked={tacticalMap.frozen}
+                onChange={this.freezeTactical}
+              />{" "}
+              Frozen
+            </label>
+          </div>
+        )}
       </div>
     );
   }

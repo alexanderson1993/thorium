@@ -32,7 +32,7 @@ import SelfDestruct from "./SelfDestruct";
 import ProbeControl from "./ProbeControl";
 import ReactorControl from "./ReactorControl";
 import Viewscreen from "./Viewscreen";
-import Messages from "./Messaging";
+import Messages, { trainingSteps as MessagesTraining } from "./Messaging";
 import Isochips from "./Isochips";
 import Shuttles from "./Shuttles";
 import Status from "./Status";
@@ -82,7 +82,15 @@ import ThrustersLite from "./Thrusters/lite";
 import ParticleDetector from "./ParticleDetector";
 import Tasks from "./Tasks";
 import ProbeScience from "./ProbeScience";
-// import DockingPorts from "./DockingPorts";
+import CommandLine from "./CommandLine";
+import DockingPorts from "./DockingPorts";
+import SubspaceField from "./SubspaceField";
+import Transwarp from "./Transwarp";
+import SpecializedDocking from "./SpecializedDocking";
+import Interface from "./Interfaces";
+import SpaceEdventuresToken from "./SpaceEdventuresToken";
+import Crm from "./Crm";
+import CrmFighter from "./CrmFighter";
 
 // Cores
 import EngineControlCore from "./EngineControl/core";
@@ -154,6 +162,15 @@ import TasksCore from "./Tasks/core";
 import AlternateSensorsCore from "./ParticleDetector/core";
 import CoreFeed from "./CoreFeed";
 import RoomSearchCore from "./RoomSearch";
+import MacrosCore from "./Macros";
+import DockingPortCore from "./DockingPorts/core";
+import TaskReportCore from "./TaskReports/core";
+import SubspaceFieldCore from "./SubspaceField/core";
+import TranswarpCore from "./Transwarp/core";
+import SpecializedDockingCore from "./SpecializedDocking/core";
+import TimelineThumbnailCore from "./Timeline/thumbnailData";
+import SpaceEdventuresTokenCore from "./SpaceEdventuresToken/core";
+import CrmCore from "./Crm/core";
 
 // Widgets
 import ComposerWidget from "./LongRangeComm/Composer";
@@ -245,8 +262,16 @@ const Views = {
   ThrustersLite,
   ParticleDetector,
   Tasks,
-  ProbeScience
-  // DockingPorts
+  ProbeScience,
+  CommandLine,
+  DockingPorts,
+  SubspaceField,
+  Transwarp,
+  SpecializedDocking,
+  Interface,
+  SpaceEdventuresToken,
+  Crm,
+  CrmFighter
 };
 
 export const Widgets = {
@@ -298,7 +323,8 @@ export const Widgets = {
     icon: "comments-o",
     name: "Messaging",
     size: "lg",
-    color: "rgb(100,150,200)"
+    color: "rgb(100,150,200)",
+    training: MessagesTraining
   },
   damageReport: {
     widget: DamageControl,
@@ -306,6 +332,20 @@ export const Widgets = {
     name: "Damage Report",
     size: "lg",
     color: "rgb(200, 100, 100)"
+  },
+  engineeringReport: {
+    widget: EngineeringReports,
+    icon: "file-code-o",
+    name: "Engineering Report",
+    size: "lg",
+    color: "rgb(180,100, 30)"
+  },
+  rndReport: {
+    widget: RnDReports,
+    icon: "file-excel-o",
+    name: "R&D Report",
+    size: "lg",
+    color: "rgb(180,100, 130)"
   },
   officerLog: {
     widget: OfficerLog,
@@ -327,6 +367,13 @@ export const Widgets = {
     name: "Sensors",
     size: "lg",
     color: "#6FEDC5"
+  },
+  commandLine: {
+    widget: CommandLine,
+    icon: "terminal",
+    name: "Command Line",
+    size: "lg",
+    color: "#5FFF5F"
   }
 };
 
@@ -399,7 +446,16 @@ export const Cores = {
   TasksCore,
   AlternateSensorsCore,
   CoreFeed,
-  RoomSearchCore
+  RoomSearchCore,
+  MacrosCore,
+  DockingPortCore,
+  TaskReportCore,
+  SubspaceFieldCore,
+  TranswarpCore,
+  SpecializedDockingCore,
+  TimelineThumbnailCore,
+  SpaceEdventuresTokenCore,
+  CrmCore
 };
 
 export default Views;

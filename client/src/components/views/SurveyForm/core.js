@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 import { Container, Row, Col, Input, Button } from "reactstrap";
 import SubscriptionHelper from "helpers/subscriptionHelper";
@@ -102,7 +102,7 @@ class SurveyCore extends Component {
     } = this.props;
     if (loading || !surveyform || !allForms) return null;
     return (
-      <Container className="surveyForm-card">
+      <Container className="surveyForm-core">
         <SubscriptionHelper
           subscribe={() =>
             this.props.data.subscribeToMore({

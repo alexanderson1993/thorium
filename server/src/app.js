@@ -1,4 +1,3 @@
-import fs from "fs";
 import { EventEmitter } from "events";
 import util from "util";
 import randomWords from "random-words";
@@ -6,6 +5,7 @@ import * as Classes from "./classes";
 import paths from "./helpers/paths";
 import Store from "./helpers/data-store";
 import heap from "./helpers/heap";
+import handleTrigger from "./helpers/handleTrigger";
 
 let snapshotDir = "./snapshots/";
 
@@ -16,14 +16,13 @@ const snapshotName =
   process.env.NODE_ENV === "production"
     ? "snapshot.json"
     : process.env.NODE_ENV === "test"
-      ? "snapshot-test.json"
-      : "snapshot-dev.json";
+    ? "snapshot-test.json"
+    : "snapshot-dev.json";
 
-console.log(snapshotName);
 const store = new Store({
   name: "Thorium",
   path: `${snapshotDir}${snapshotName}`,
-  debounce: 1000 * 2
+  debounce: 1000 * 30
 });
 
 class Events extends EventEmitter {
@@ -57,12 +56,19 @@ class Events extends EventEmitter {
     this.keyboards = [];
     this.sounds = [];
     this.taskTemplates = [];
+    this.taskReports = [];
     this.tasks = [];
+    this.commandLine = [];
+    this.triggerGroups = [];
+    this.interfaces = [];
+    this.interfaceDevices = [];
     this.autoUpdate = true;
     this.migrations = { assets: true };
     this.thoriumId = randomWords(5).join("-");
     this.doTrack = false;
     this.askedToTrack = false;
+    this.addedTaskTemplates = false;
+    this.spaceEdventuresToken = null;
     this.events = [];
     this.replaying = false;
     this.snapshotVersion = 0;
@@ -94,7 +100,9 @@ class Events extends EventEmitter {
         key === "migrations" ||
         key === "thoriumId" ||
         key === "doTrack" ||
-        key === "askedToTrack"
+        key === "askedToTrack" ||
+        key === "addedTaskTemplates" ||
+        key === "spaceEdventuresToken"
       ) {
         this[key] = snapshot[key];
       }
@@ -104,10 +112,12 @@ class Events extends EventEmitter {
             try {
               this[key].push(new Classes[obj.class](obj));
             } catch (err) {
-              console.error(err);
-              throw new Error(
-                JSON.stringify({ message: "Undefined key in class", key, obj })
-              );
+              console.log(err);
+              console.log({
+                message: "Undefined key in class",
+                key,
+                class: obj.class
+              });
             }
           }
         });
@@ -133,12 +143,11 @@ class Events extends EventEmitter {
   }
   handleEvent(param, eventName, context = {}) {
     const { clientId } = context;
-
     this.timestamp = new Date();
     this.version = this.version + 1;
+    const client = this.clients.find(c => c.id === clientId);
     if (clientId) {
       // Get the current flight of the client
-      const client = this.clients.find(c => c.id === clientId);
       let flightId = null;
       if (client) {
         flightId = client.flightId;
@@ -152,6 +161,20 @@ class Events extends EventEmitter {
       };
       this.events.push(event);
     }
+    // Handle any triggers before the event so we can capture data that
+    // the event might remove
+    context = {
+      ...context,
+      flight:
+        this.flights.find(f => f.id === (client && client.flightId)) ||
+        context.flight,
+      simulator:
+        this.simulators.find(s => s.id === (client && client.simulatorId)) ||
+        context.simulator,
+      client
+    };
+    handleTrigger(eventName, param, context);
+
     this.emit(eventName, { ...param, context });
     process.env.NODE_ENV === "production" && this.snapshot();
   }

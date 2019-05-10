@@ -59,7 +59,7 @@ export default [
     },
     instructions({
       simulator,
-      requiredValues: { preamble, room: roomId, message },
+      requiredValues: { preamble, room: roomId, message, system },
       task = {}
     }) {
       const station = simulator.stations.find(s =>
@@ -67,12 +67,14 @@ export default [
       );
       const room = App.rooms.find(r => r.id === roomId);
       const deck = App.decks.find(d => d.id === (room ? room.deckId : roomId));
+      const decks = App.decks.find(d => d.simulatorId === simulator.id);
+      const randomDeck = randomFromList(decks);
       const location =
         !room && !deck
-          ? "All Decks"
+          ? `Deck ${randomDeck ? randomDeck.number : 1}`
           : room
-            ? `${room.name}, Deck ${deck.number}`
-            : `Deck ${deck.number}`;
+          ? `${room.name}, Deck ${deck.number}`
+          : `Deck ${deck.number}`;
       if (station && task.station === station.name)
         return reportReplace(
           `${preamble} Make the following internal call:
@@ -80,7 +82,7 @@ export default [
 Location: ${location}
 Message: ${message}
         `,
-          { simulator }
+          { simulator, system }
         );
       return reportReplace(
         `${preamble} Ask the ${
@@ -92,7 +94,7 @@ Message: ${message}
 Location: ${location}
 Message: ${message}
       `,
-        { simulator }
+        { simulator, system }
       );
     },
     verify({ requiredValues, simulator }) {

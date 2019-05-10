@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { InputField, OutputField } from "../../generic/core";
 import { Input } from "reactstrap";
 import { graphql, withApollo, Mutation } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import SubscriptionHelper from "helpers/subscriptionHelper";
 
 const TRANSPORTER_SUB = gql`
@@ -41,7 +41,10 @@ class TransporterCore extends Component {
       }
     }
   }
-  targets(transporter, result) {
+  targets = result => {
+    const transporter = this.props.data.loading
+      ? { targets: [] }
+      : this.props.data.transporters[0];
     this.props.client.mutate({
       mutation: gql`
         mutation SetTransporterTargets($transporter: ID!, $targets: Int!) {
@@ -53,7 +56,7 @@ class TransporterCore extends Component {
         targets: result
       }
     });
-  }
+  };
   render() {
     const transporter = this.props.data.loading
       ? { targets: [] }
@@ -114,7 +117,7 @@ class TransporterCore extends Component {
                     action({
                       variables: {
                         id: transporter.id,
-                        chargeSpeed: e.target.value
+                        chargeSpeed: parseFloat(e.target.value)
                       }
                     })
                   }
@@ -131,7 +134,7 @@ class TransporterCore extends Component {
             <OutputField>{transporter.destination}</OutputField>
             <InputField
               prompt="How many transporter targets?"
-              onClick={this.targets.bind(this, transporter)}
+              onClick={this.targets}
             >
               {transporter.targets.length}
             </InputField>

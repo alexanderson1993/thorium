@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Card, CardBody, Row, Col, Button } from "reactstrap";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import * as Components from "../../../containers/FlightDirector/SurveyConfig/components";
 class Form extends Component {
   state = {
@@ -38,7 +38,7 @@ class Form extends Component {
     const { form } = this.props;
     const { currentForm, responses, submitted } = this.state;
     const formItem = form.form[currentForm];
-    const Comp = Components[formItem.type];
+    const Comp = formItem && Components[formItem.type];
     return (
       <div>
         <h1 className="text-center">{form.title}</h1>
@@ -51,7 +51,7 @@ class Form extends Component {
               flexDirection: "column"
             }}
           >
-            {submitted ? (
+            {submitted || !Comp ? (
               <h1>Thank you for your response.</h1>
             ) : (
               <div>

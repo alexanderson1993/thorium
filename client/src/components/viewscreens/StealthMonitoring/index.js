@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Container, Row, Col } from "reactstrap";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 
 import TransitionGroup from "react-transition-group/TransitionGroup";
@@ -16,10 +16,7 @@ class StealthBars extends Transitioner {
     if (sys.type === "Shield") {
       return `${sys.name} Shields`;
     }
-    if (sys.type === "Engine") {
-      return `${sys.name} Engines`;
-    }
-    return sys.name;
+    return sys.displayName || sys.name;
   }
   render() {
     const { systems } = this.props;
@@ -169,9 +166,7 @@ class StealthField extends Component {
           );
 
           return {
-            id: s.id,
-            name: s.name,
-            type: s.type,
+            ...s,
             stealthFactor
           };
         })
@@ -236,9 +231,11 @@ class StealthField extends Component {
         </Row>
         <Row className="stealth-board">
           <TransitionGroup>
-            {[StealthBars].filter(s => s.state).map(Comp => (
-              <Comp key={Comp.name} systems={systems} />
-            ))}
+            {[StealthBars]
+              .filter(s => s.state)
+              .map(Comp => (
+                <Comp key={Comp.name} systems={systems} />
+              ))}
           </TransitionGroup>
         </Row>
       </Container>
@@ -273,6 +270,7 @@ const STEALTH_QUERY = gql`
     systems(simulatorId: $simulatorId) {
       id
       name
+      displayName
       type
       stealthFactor
     }

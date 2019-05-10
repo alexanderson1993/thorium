@@ -4,13 +4,15 @@ import SetsPicker from "./SetsPicker";
 import { Link } from "react-router-dom";
 import { Container, Button, ButtonGroup } from "reactstrap";
 import { withApollo, Query, Mutation } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import Tour from "helpers/tourHelper";
 
 const FlightQuery = gql`
   query Flight {
     flights {
       id
+      name
+      flightType
       running
     }
   }
@@ -39,14 +41,23 @@ All information in all simulators in this flight will be reset.`
       });
     }
   };
-  const deleteFlight = () => {
+  const deleteFlight = flightType => () => {
     const flightId = props.match.params.flightId;
+
     if (
       window.confirm(
         `Are you sure you want to delete this flight?
 It will permenantly erase all simulators running in this flight.`
       )
     ) {
+      if (flightType) {
+        if (
+          !window.confirm(
+            `This flight hasn't been transmitted to SpaceEdventures.org. Without transmitting this flight, all participants will not receive credit for this flight. Are you sure you want to delete this flight before transmitting?`
+          )
+        )
+          return;
+      }
       const mutation = gql`
         mutation DeleteFlight($flightId: ID!) {
           deleteFlight(flightId: $flightId)
@@ -118,23 +129,31 @@ It will permenantly erase all simulators running in this flight.`
         )
       });
   };
+  const transmit = action => () => {
+    if (
+      window.confirm(`Are you sure you want to transmit this flight's information to SpaceEdVentures.org? 
+This can only be done once per flight and should only be done when the flight is complete.`)
+    ) {
+      action();
+    }
+  };
   return (
     <Query
       query={FlightQuery}
       variables={{ flightId: props.match.params.flightId }}
     >
       {({ loading, data }) => {
-        if (loading) return null;
-        const flight = data.flights.find(
-          f => f.id === props.match.params.flightId
-        );
+        if (loading || !data) return null;
+        const flight =
+          data.flights &&
+          data.flights.find(f => f.id === props.match.params.flightId);
         if (!flight) return <div>Error loading flight...</div>;
         return (
           <Container className="flight-lobby">
             <span>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <h4>
-                  Flight Lobby{" "}
+                  Flight Lobby: {flight.name}{" "}
                   <small>
                     <Link to="/">Return to Main</Link>
                   </small>
@@ -147,7 +166,7 @@ It will permenantly erase all simulators running in this flight.`
                 <Button
                   className="delete-flight"
                   color="danger"
-                  onClick={deleteFlight}
+                  onClick={deleteFlight(flight.flightType)}
                 >
                   Delete Flight
                 </Button>
@@ -205,6 +224,40 @@ It will permenantly erase all simulators running in this flight.`
                         Resume Flight
                       </Button>
                     )}
+                  </Mutation>
+                )}
+                <Button
+                  tag="a"
+                  href={`${window.location.protocol}//${
+                    window.location.hostname
+                  }:${parseInt(window.location.port, 10) + 1}/exportFlight/${
+                    props.match.params.flightId
+                  }`}
+                  color="info"
+                >
+                  Export Flight
+                </Button>
+                {flight.flightType && (
+                  <Mutation
+                    mutation={gql`
+                      mutation TransmitFlight($flightId: ID!) {
+                        assignSpaceEdventuresFlightRecord(flightId: $flightId)
+                      }
+                    `}
+                    variables={{ flightId: props.match.params.flightId }}
+                    refetchQueries={[
+                      {
+                        query: FlightQuery
+                      }
+                    ]}
+                  >
+                    {(action, { loading }) =>
+                      !loading && (
+                        <Button color="dark" onClick={transmit(action)}>
+                          Transmit to Space EdVentures
+                        </Button>
+                      )
+                    }
                   </Mutation>
                 )}
               </ButtonGroup>

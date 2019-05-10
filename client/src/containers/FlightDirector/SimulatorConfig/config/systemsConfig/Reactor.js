@@ -1,6 +1,6 @@
 import React from "react";
 import GenericSystemConfig from "./Generic";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { Query, Mutation } from "react-apollo";
 import { Input, FormGroup, Label, Row, Col, Button } from "reactstrap";
 import FontAwesome from "react-fontawesome";
@@ -12,6 +12,7 @@ const REACTOR_QUERY = gql`
       model
       powerOutput
       batteryChargeRate
+      requireBalance
       efficiencies {
         label
         color
@@ -36,9 +37,15 @@ const Reactor = props => {
     action({
       variables: {
         id: reactor.id,
-        efficiencies: reactor.efficiencies.map(
-          ({ __typename, ...e }, ind) =>
-            ind === i ? { ...e, [key]: evt.target.value } : e
+        efficiencies: reactor.efficiencies.map(({ __typename, ...e }, ind) =>
+          ind === i
+            ? {
+                ...e,
+                [key]: isNaN(parseFloat(evt.target.value))
+                  ? evt.target.value
+                  : parseFloat(evt.target.value)
+              }
+            : e
         )
       }
     });
@@ -119,12 +126,40 @@ const Reactor = props => {
                           defaultValue={reactor.powerOutput}
                           onChange={evt =>
                             action({
-                              variables: { id, output: evt.target.value }
+                              variables: {
+                                id,
+                                output: parseInt(evt.target.value, 10)
+                              }
                             })
                           }
                         />
                       )}
                     </Mutation>
+                  </Label>
+                  <Label style={{ marginLeft: "30px" }}>
+                    <Mutation
+                      mutation={gql`
+                        mutation RequireBalance($id: ID!, $balance: Boolean!) {
+                          reactorRequireBalance(id: $id, balance: $balance)
+                        }
+                      `}
+                      refetchQueries={[
+                        { query: REACTOR_QUERY, variables: { id } }
+                      ]}
+                    >
+                      {action => (
+                        <Input
+                          type="checkbox"
+                          defaultChecked={reactor.requireBalance}
+                          onChange={evt =>
+                            action({
+                              variables: { id, balance: evt.target.checked }
+                            })
+                          }
+                        />
+                      )}
+                    </Mutation>
+                    Warn crew of Unbalanced Power
                   </Label>
                   <Mutation
                     mutation={gql`
@@ -220,8 +255,7 @@ const Reactor = props => {
                 <FormGroup>
                   <Label>
                     Battery Charge Rate
-                    <small
-                    >{` Numbers < 1 are slow, > 1 are fast, < 0 are reverse`}</small>
+                    <small>{` Numbers < 1 are slow, > 1 are fast, < 0 are reverse`}</small>
                     <Mutation
                       mutation={gql`
                         mutation BatteryChargeRate($id: ID!, $rate: Float!) {

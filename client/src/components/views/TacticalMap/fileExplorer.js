@@ -1,7 +1,7 @@
 import React, { Fragment, Component } from "react";
 import { Button } from "reactstrap";
 import { graphql, withApollo } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import FontAwesome from "react-fontawesome";
 import ObjPreview from "./3dObjPreview";
 import SubscriptionHelper from "helpers/subscriptionHelper";
@@ -61,12 +61,14 @@ class FileExplorer extends Component {
     this.state = {
       currentDirectory
     };
+    this.props.folderChange && this.props.folderChange(currentDirectory);
   }
   static defaultProps = {
     directory: "/"
   };
   setDirectory = directory => {
     this.setState({ currentDirectory: directory });
+    this.props.folderChange && this.props.folderChange(directory);
   };
   _createFolder = () => {
     let name = prompt("What is the name of the folder?");
@@ -115,17 +117,17 @@ class FileExplorer extends Component {
   _massUpload = e => {
     const files = e.target.files;
     if (e.target.files.length === 0) return;
-    if (e.target.files.length > 1) return this.doMassUplaod(files);
+    if (e.target.files.length > 1) return this.doMassUpload(files);
     const fileName = files[0].name.slice(0, files[0].name.lastIndexOf("."));
     const name = prompt(
       "What would you like to name the uploaded file?",
       fileName
     );
     if (name) {
-      this.doMassUplaod(files, name);
+      this.doMassUpload(files, name);
     }
   };
-  doMassUplaod = (files, name) => {
+  doMassUpload = (files, name) => {
     const data = new FormData();
     data.append("folderPath", this.state.currentDirectory);
     if (name) data.append("name", name);
@@ -201,32 +203,29 @@ class FileExplorer extends Component {
             <div ref={measureRef}>
               {dimensions && (
                 <div className="directory-container">
-                  {currentDirectory !== directory &&
-                    currentDirectory !== "/" && (
-                      <div
-                        style={{ maxWidth: dimensions.width * widthFactor }}
-                        onClick={() => {
-                          //Get the current directory's folder
-                          let dir = this.props.data.assetFolders.filter(
-                            folder => {
-                              return folder.fullPath === currentDirectory;
-                            }
-                          )[0];
-                          this.setState({
-                            currentDirectory: dir ? dir.folderPath : "/"
-                          });
-                        }}
-                      >
-                        <div className="file-container">
-                          <FontAwesome
-                            flip="horizontal"
-                            size="3x"
-                            name="share"
-                          />
-                          <p>Back</p>
-                        </div>
+                  {currentDirectory !== directory && currentDirectory !== "/" && (
+                    <div
+                      style={{ maxWidth: dimensions.width * widthFactor }}
+                      onClick={() => {
+                        //Get the current directory's folder
+                        let dir = this.props.data.assetFolders.filter(
+                          folder => {
+                            return folder.fullPath === currentDirectory;
+                          }
+                        )[0];
+                        this.setState({
+                          currentDirectory: dir ? dir.folderPath : "/"
+                        });
+                        this.props.folderChange &&
+                          this.props.folderChange(dir ? dir.folderPath : "/");
+                      }}
+                    >
+                      <div className="file-container">
+                        <FontAwesome flip="horizontal" size="3x" name="share" />
+                        <p>Back</p>
                       </div>
-                    )}
+                    </div>
+                  )}
                   {assetFolders
                     .filter(folder => {
                       return folder.folderPath === currentDirectory;
@@ -304,7 +303,7 @@ class FileExplorer extends Component {
   }
 }
 
-class VideoPreview extends Component {
+export class VideoPreview extends Component {
   state = { loaded: false };
   render() {
     return (

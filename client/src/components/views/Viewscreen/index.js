@@ -1,8 +1,9 @@
 import React, { Fragment, Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 import * as ViewscreenCards from "components/viewscreens";
 import SubscriptionHelper from "helpers/subscriptionHelper";
+import SoundPlayer from "../../client/soundPlayer";
 
 import "./style.scss";
 
@@ -25,7 +26,7 @@ export class Viewscreen extends Component {
     };
     const mutation = gql`
       mutation AutoAdvance($simulatorId: ID!, $prev: Boolean) {
-        autoAdvance(simulatorId: $simulatorId, prev: $prev)
+        autoAdvance(simulatorId: $simulatorId, prev: $prev, limited: true)
       }
     `;
     if (e.which === 39 || e.which === 33) {
@@ -73,6 +74,9 @@ export class Viewscreen extends Component {
     if (!this.props.data) return null;
     return (
       <Fragment>
+        {this.props.clientObj.soundPlayer && (
+          <SoundPlayer {...this.props} invisible />
+        )}
         <SubscriptionHelper
           subscribe={() => {
             return this.props.data.subscribeToMore({

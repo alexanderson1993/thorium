@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Row, Col, Container } from "reactstrap";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { InputGroup, InputGroupAddon, Button, Input } from "reactstrap";
 import { graphql, withApollo } from "react-apollo";
 import DamageOverlay from "../helpers/DamageOverlay";
@@ -16,7 +16,7 @@ const trainingSteps = [
   {
     selector: ".number-pad",
     content:
-      "Using the number pad, input the calculated course coordinates in the Current Course fields to set your course."
+      "Using the number pad, input the calculated course coordinates in the current destination fields to set course."
   }
 ];
 
@@ -171,10 +171,12 @@ class Navigation extends Component {
       });
       return;
     }
-    enteredCourse[selectedField] = enteredCourse[selectedField].slice(
-      0,
-      enteredCourse[selectedField].length - 1
-    );
+    enteredCourse[selectedField] = enteredCourse[selectedField]
+      ? enteredCourse[selectedField].slice(
+          0,
+          enteredCourse[selectedField].length - 1
+        )
+      : "";
     this.setState({
       enteredCourse
     });
@@ -372,7 +374,7 @@ class Navigation extends Component {
             {navigation.calculate && <CourseNumber {...navigation} />}
             {!navigation.thrusters && (
               <div className="currentCourse card">
-                <label>Current Course</label>
+                <label>Current Destination</label>
                 <Row>
                   <Col className="col-sm-3">X:</Col>
                   <Col

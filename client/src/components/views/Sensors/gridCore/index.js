@@ -1,6 +1,6 @@
 import React, { Component, Fragment } from "react";
 import ReactDOM from "react-dom";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo } from "react-apollo";
 import { Row, Col, Container, Button, Input, ButtonGroup } from "reactstrap";
 import Grid from "../GridDom";
@@ -21,49 +21,54 @@ function distance3d(coord2, coord1) {
   return Math.sqrt((x2 -= x1) * x2 + (y2 -= y1) * y2 + (z2 -= z1) * z2);
 }
 
-const queryData = `
-id
-type
-autoTarget
-autoThrusters
-interference
-movement {
-  x
-  y
-  z
-}
-segments {
-  ring
-  line
-  state
-}
-armyContacts {
-  id
-  name
-  size
-  icon
-  picture
-  color
-  infrared
-  cloaked
-  destroyed
-  locked
-  disabled
-  hostile
-}`;
+const fragment = gql`
+  fragment SensorsData on Sensors {
+    id
+    type
+    autoTarget
+    autoThrusters
+    interference
+    movement {
+      x
+      y
+      z
+    }
+    segments {
+      ring
+      line
+      state
+    }
+    armyContacts {
+      id
+      name
+      size
+      icon
+      picture
+      color
+      infrared
+      cloaked
+      destroyed
+      locked
+      disabled
+      hostile
+    }
+  }
+`;
 const GRID_QUERY = gql`
   query GetSensors($simulatorId: ID) {
     sensors(simulatorId: $simulatorId, domain: "external") {
-      ${queryData}
+      ...SensorsData
     }
   }
+  ${fragment}
 `;
 const SENSOR_SUB = gql`
   subscription SensorsChanged($id: ID) {
     sensorsUpdate(simulatorId: $id, domain: "external") {
-${queryData}
+      ...SensorsData
     }
   }
+  ${fragment}
 `;
 
 class GridCore extends Component {
@@ -195,7 +200,7 @@ class GridCore extends Component {
       contact: {
         icon,
         type,
-        size,
+        size: parseFloat(size),
         name,
         color,
         picture,
@@ -301,12 +306,14 @@ class GridCore extends Component {
     }));
   };
   triggerUpdate = speed => {
+    speed = Number(speed);
+
     const sensors = this.props.data.sensors[0];
     const { client } = this.props;
-    const { draggingContacts, dimensions } = this.state;
+    let { draggingContacts, dimensions } = this.state;
 
     // Delete any dragging contacts that are out of bounds
-    const contacts = draggingContacts
+    const contacts = (draggingContacts || [])
       .map(c => {
         const contactEl = ReactDOM.findDOMNode(this).querySelector(
           `#contact-${c.id}`
@@ -373,7 +380,7 @@ class GridCore extends Component {
       })
       .then(() => {
         this.setState({
-          draggingContacts: null,
+          draggingContacts: [],
           iconWidth: null,
           iconHeight: null,
           speedAsking: null
@@ -388,7 +395,8 @@ class GridCore extends Component {
   }
   render() {
     if (this.props.data.loading) return <p>Loading...</p>;
-    if (!this.props.data.sensors[0]) return <p>No Sensor Grid</p>;
+    if (!this.props.data.sensors || !this.props.data.sensors[0])
+      return <p>No Sensor Grid</p>;
     const sensors = this.props.data.sensors[0];
     const {
       speed,
@@ -434,6 +442,7 @@ class GridCore extends Component {
           <Col
             sm={4}
             style={{
+              height: "100%",
               display: "flex",
               justifyContent: "space-between",
               flexDirection: "column"
@@ -574,7 +583,7 @@ class GridCore extends Component {
                   speedAsking={speedAsking}
                   cancelMove={() =>
                     this.setState({
-                      draggingContacts: null,
+                      draggingContacts: [],
                       selectedContacts: [],
                       speedAsking: null
                     })

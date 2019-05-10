@@ -1,8 +1,9 @@
 import React, { Component } from "react";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, compose } from "react-apollo";
 import { Container, Col, Row } from "reactstrap";
 import SubscriptionHelper from "helpers/subscriptionHelper";
+
 const SPEEDCHANGE_SUB = gql`
   subscription SpeedChanged($simulatorId: ID) {
     engineUpdate(simulatorId: $simulatorId) {
@@ -57,13 +58,14 @@ class EngineCoreView extends Component {
     let speedList = [];
     let onEngine = "Full Stop";
     if (!this.props.data.loading) {
-      this.props.data.engines.forEach(engine => {
-        if (engine.on) onEngine = `${engine.id}$${engine.speed - 1}`;
-        speedList.push({ disabled: true, text: engine.name });
-        engine.speeds.forEach((speed, index) => {
-          speedList.push({ text: speed.text, engineId: engine.id, index });
+      this.props.data.engines &&
+        this.props.data.engines.forEach(engine => {
+          if (engine.on) onEngine = `${engine.id}$${engine.speed - 1}`;
+          speedList.push({ disabled: true, text: engine.name });
+          engine.speeds.forEach((speed, index) => {
+            speedList.push({ text: speed.text, engineId: engine.id, index });
+          });
         });
-      });
     }
     return this.props.data.loading || !this.props.data.engines ? (
       <span>"Loading..."</span>

@@ -13618,11 +13618,18 @@ export default {
   keyboards: [],
   sounds: [],
   tasks: [],
+  commandLine: [],
+  triggerGroups: [],
   taskTemplates: [],
+  taskReports: [],
+  interfaces: [],
+  interfaceDevices: [],
   autoUpdate: true,
   thoriumId: randomWords(5).join("-"),
   doTrack: false,
   askedToTrack: false,
+  addedTaskTemplates: false,
+  spaceEdventuresToken: "",
   migrations: {
     assets: true
   },

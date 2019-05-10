@@ -7,6 +7,7 @@ import path from "path";
 import paths from "../helpers/paths";
 import fs from "fs";
 import uuid from "uuid";
+import tokenGenerator from "../helpers/tokenGenerator";
 function randomFromList(list) {
   if (!list) return;
   const length = list.length;
@@ -37,17 +38,18 @@ function performScannerAction(id, action) {
   }
 }
 
-App.on("clientConnect", ({ client, mobile, cards }) => {
+App.on("clientConnect", ({ client, label, mobile, cards }) => {
   const clientObj = App.clients.find(c => c.id === client);
   if (clientObj) {
     // There is a client alread in the database
     // Just make sure it is connected
-    clientObj.connect({ mobile, cards });
+    clientObj.connect({ mobile, label, cards });
   } else {
     // Add it to the server
     const newClient = new Client({
       id: client,
       connected: true,
+      label,
       mobile,
       cards
     });
@@ -61,18 +63,19 @@ App.on("clientDisconnect", ({ client }) => {
   pubsub.publish("clientChanged", App.clients);
 });
 
-App.on("clientSetFlight", ({ client, flightId }) => {
-  console.log("Setting flight", client, flightId);
+App.on("clientSetFlight", ({ client, flightId, cb }) => {
   const clientObj = App.clients.find(c => c.id === client);
   clientObj.setFlight(flightId);
   pubsub.publish("clientChanged", App.clients);
+  cb && cb();
 });
-App.on("clientSetSimulator", ({ client, simulatorId }) => {
+App.on("clientSetSimulator", ({ client, simulatorId, cb }) => {
   const clientObj = App.clients.find(c => c.id === client);
   clientObj.setSimulator(simulatorId);
   pubsub.publish("clientChanged", App.clients);
+  cb && cb();
 });
-App.on("clientSetStation", ({ client, stationName }) => {
+App.on("clientSetStation", ({ client, stationName, cb }) => {
   const clientObj = App.clients.find(c => c.id === client);
   clientObj.setStation(stationName);
   pubsub.publish("clientChanged", App.clients);
@@ -91,10 +94,28 @@ App.on("clientSetStation", ({ client, stationName }) => {
     );
     pubsub.publish("viewscreensUpdate", App.viewscreens);
   }
+  cb && cb();
 });
 App.on("clientLogin", ({ client, loginName }) => {
   const clientObj = App.clients.find(c => c.id === client);
   clientObj.login(loginName);
+
+  // Log in the client to indicate that it was part of this flight
+  const flight = App.flights.find(f => f.id === clientObj.flightId);
+  flight.loginClient({
+    id: clientObj.id,
+    token: tokenGenerator(),
+    simulatorId: clientObj.simulatorId,
+    name: clientObj.station
+  });
+
+  pubsub.publish("clientChanged", App.clients);
+});
+App.on("clientSetEmail", ({ client, email }) => {
+  const clientObj = App.clients.find(c => c.id === client);
+
+  const flight = App.flights.find(f => f.id === clientObj.flightId);
+  flight.addClientEmail(client, email);
   pubsub.publish("clientChanged", App.clients);
 });
 App.on("clientLogout", ({ client }) => {
@@ -191,7 +212,11 @@ App.on(
         c =>
           (c.simulatorId === simulatorId &&
             (c.station === stationObj || stationObj === "all")) ||
-          c.id === clientId
+          c.id === clientId ||
+          c.id === station ||
+          (c.simulatorId === simulatorId &&
+            stationObj === "Sound" &&
+            c.soundPlayer)
       );
       clients = clients.map(c => c.id);
     }
@@ -230,6 +255,16 @@ App.on("stopAllSounds", ({ simulatorId }) => {
   });
   pubsub.publish("cancelAllSounds", clients);
 });
+App.on("cancelLoopingSounds", ({ simulatorId }) => {
+  const clients = App.clients.filter(s => s.simulatorId === simulatorId);
+  // Remove all of the sounds that have one of the clients
+  App.sounds = App.sounds.filter(s => {
+    const client = clients.find(c => s.clients.indexOf(c) > -1);
+    if (client) return true;
+    return false;
+  });
+  pubsub.publish("cancelLoopingSounds", clients);
+});
 App.on(
   "applyClientSet",
   ({ id, flightId, simulatorId, templateId, stationSetId }) => {
@@ -248,20 +283,24 @@ App.on(
         const client = App.clients.find(cl => c.clientId === cl.id);
         client.setFlight(flightId);
         client.setSimulator(simulatorId);
-        client.setStation(c.station);
+        client.setStation(c.station.replace("mobile:", ""));
+        if (c.soundPlayer) client.setSoundPlayer(true);
         // If the station name is 'Viewscreen', check for or create a viewscreen for the client
-        if (
-          c.station === "Viewscreen" &&
-          !App.viewscreens.find(
+        if (c.station === "Viewscreen") {
+          const vs = App.viewscreens.find(
             v => v.id === client.id && v.simulatorId === client.simulatorId
-          )
-        ) {
-          App.viewscreens.push(
-            new Viewscreen({
-              id: client.id,
-              simulatorId: client.simulatorId
-            })
           );
+          if (!vs) {
+            App.viewscreens.push(
+              new Viewscreen({
+                id: client.id,
+                simulatorId: client.simulatorId,
+                secondary: c.secondary
+              })
+            );
+          } else {
+            vs.secondary = c.secondary;
+          }
         }
       });
     pubsub.publish("viewscreensUpdate", App.viewscreens);
@@ -274,12 +313,23 @@ App.on("clientMovieState", ({ client, movie }) => {
   pubsub.publish("clientChanged", App.clients);
 });
 
+App.on("clientSetSoundPlayer", ({ client, soundPlayer }) => {
+  const c = App.clients.find(c => c.id === client);
+  c.setSoundPlayer(soundPlayer);
+  pubsub.publish("clientChanged", App.clients);
+});
+
 App.on("setClientOverlay", ({ id, overlay }) => {
   const c = App.clients.find(c => c.id === id);
   c.setOverlay(overlay);
   pubsub.publish("clientChanged", App.clients);
 });
 
+App.on("clientCrack", ({ id, crack }) => {
+  const c = App.clients.find(c => c.id === id);
+  c && (crack ? c.crack() : c.uncrack());
+  pubsub.publish("clientChanged", App.clients);
+});
 App.on("setKeypadCode", ({ id, code }) => {
   performKeypadAction(id, client => {
     client.setCode(code);

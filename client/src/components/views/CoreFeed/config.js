@@ -34,6 +34,7 @@ const components = [
   "ReactivationCore",
   "ReactorControlCore",
   "RemoteCore",
+  "SecurityDecksCore",
   "SecurityTeamsCore",
   "SelfDestructCore",
   "SensorsCore",
@@ -46,7 +47,8 @@ const components = [
   "ThxCore",
   "TorpedoCore",
   "TractorBeamCore",
-  "TransporterCore"
+  "TransporterCore",
+  "TranswarpCore"
 ];
 
 class CoreFeedConfig extends Component {

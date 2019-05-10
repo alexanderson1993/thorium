@@ -1,5 +1,6 @@
 import React from "react";
-import gql from "graphql-tag";
+import ReactDOM from "react-dom";
+import gql from "graphql-tag.macro";
 import { Mutation } from "react-apollo";
 
 const SpeedAsker = ({
@@ -15,7 +16,7 @@ const SpeedAsker = ({
   const contacts = draggingContacts
     .map(c => c.id)
     .filter((a, i, arr) => arr.indexOf(a) === i);
-  return (
+  return ReactDOM.createPortal(
     <div
       className="speed-container"
       style={{
@@ -67,7 +68,8 @@ const SpeedAsker = ({
           </p>
         )}
       </Mutation>
-    </div>
+    </div>,
+    document.body
   );
 };
 export default SpeedAsker;

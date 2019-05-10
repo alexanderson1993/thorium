@@ -1,13 +1,13 @@
 import React, { Component } from "react";
 import { Row, Col, Button, Input, ButtonGroup } from "reactstrap";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import { graphql, withApollo, Query } from "react-apollo";
 import SoundPicker from "helpers/soundPicker";
 import { titleCase } from "change-case";
 
 import SubscriptionHelper from "helpers/subscriptionHelper";
 import "./style.scss";
-
+import { randomFromList } from "helpers/randomFromList";
 const STATION_CHANGE_QUERY = gql`
   subscription StationsUpdate($simulatorId: ID) {
     simulatorsUpdate(simulatorId: $simulatorId) {
@@ -36,6 +36,7 @@ const MOVIE_QUERY = gql`
 export const triggerAction = ({
   actionName,
   actionDest,
+  selectedSound,
   selectedMovie,
   selectedCard,
   selectedVoice,
@@ -47,6 +48,7 @@ export const triggerAction = ({
     message = prompt("What do you want to say?");
     if (!message) return;
   }
+  if (actionName === "sound") message = selectedSound;
   if (actionName === "changeCard") message = selectedCard;
   if (actionName === "movie") message = selectedMovie;
   if (actionDest === "random") {
@@ -117,10 +119,7 @@ class ActionsCore extends Component {
   playSound = () => {
     let { selectedSound, actionDest } = this.state;
     if (actionDest === "random") {
-      const index = Math.floor(
-        Math.random() * this.props.data.simulators[0].stations
-      );
-      actionDest = this.props.data.simulators[0].stations[index].name;
+      actionDest = randomFromList(this.props.data.simulators[0].stations).name;
     }
     const mutation = gql`
       mutation PlaySound($asset: String!, $station: String, $simulatorId: ID) {
@@ -164,7 +163,18 @@ class ActionsCore extends Component {
           </Col>
           {!bridgeMap && (
             <Col sm={4}>
-              <Button block color="primary" size="sm" onClick={this.playSound}>
+              <Button
+                block
+                color="primary"
+                size="sm"
+                onClick={() =>
+                  triggerAction({
+                    ...this.state,
+                    simulator: this.props.data.simulators[0],
+                    client: this.props.client
+                  })
+                }
+              >
                 Play
               </Button>
             </Col>
@@ -338,7 +348,7 @@ class ActionsCore extends Component {
     );
   };
   render() {
-    const { bridgeMap } = this.props;
+    const { bridgeMap, flight } = this.props;
     const { actionName } = this.state;
     return (
       <div className="core-action">
@@ -408,11 +418,18 @@ class ActionsCore extends Component {
             </optgroup>
             <optgroup>
               <option value="online">Online</option>
+              {flight.flightType && (
+                <option value="spaceEdventuresToken">
+                  Space EdVentures Token
+                </option>
+              )}
               <option value="offline">Offline</option>
               <option value="power">Power Loss</option>
               <option value="lockdown">Lockdown</option>
               <option value="maintenance">Maintenance</option>
               <option value="soviet">Soviet</option>
+              <option value="crack">Crack</option>
+              <option value="uncrack">Un-Crack</option>
             </optgroup>
             <optgroup>
               <option value="reload">Reload Browser</option>
@@ -431,6 +448,7 @@ class ActionsCore extends Component {
               </optgroup>
               <optgroup>
                 {!this.props.data.loading &&
+                  this.props.data.simulators &&
                   this.props.data.simulators[0] &&
                   this.props.data.simulators[0].stations &&
                   this.props.data.simulators[0].stations.map(s => (

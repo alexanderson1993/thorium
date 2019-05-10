@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Query, Mutation } from "react-apollo";
-import gql from "graphql-tag";
+import gql from "graphql-tag.macro";
 import SubscriptionHelper from "helpers/subscriptionHelper";
 import { ListGroup, ListGroupItem, Button } from "reactstrap";
 import { InputField } from "../../generic/core";
@@ -14,40 +14,44 @@ function processTime(time) {
     DateTime.TIME_SIMPLE
   );
 }
-const queryData = `
-id
-messages {
-  id
-  sent
-  crew
-  message
-  decodedMessage
-  deleted
-  encrypted
-  approved
-  sender
-  timestamp
-  a
-  f
-  ra
-  rf
-}
-satellites
+const fragment = gql`
+  fragment LRCommCoreData on LRCommunications {
+    id
+    messages {
+      id
+      sent
+      crew
+      message
+      decodedMessage
+      deleted
+      encrypted
+      approved
+      sender
+      timestamp
+      a
+      f
+      ra
+      rf
+    }
+    satellites
+  }
 `;
 
 const QUERY = gql`
   query LongRangeComm($simulatorId: ID!) {
     longRangeCommunications(simulatorId: $simulatorId) {
-${queryData}
+      ...LRCommCoreData
     }
   }
+  ${fragment}
 `;
 const SUBSCRIPTION = gql`
   subscription LongRangeCommUpdate($simulatorId: ID!) {
     longRangeCommunicationsUpdate(simulatorId: $simulatorId) {
-${queryData}
+      ...LRCommCoreData
     }
   }
+  ${fragment}
 `;
 
 class ConvoCore extends Component {
@@ -118,6 +122,7 @@ class ConvoCore extends Component {
                 if (selectedMessage === "new")
                   return <DecodingCore {...this.props} />;
                 const message = messages.find(m => m.id === selectedMessage);
+                if (!message) return null;
                 return `${processTime(message.timestamp)}${
                   message.encrypted ? ` - Encrypted` : ""
                 }${message.approved ? ` - Approved` : ""}
@@ -164,7 +169,7 @@ ${message.message}`;
 
 const TemplateData = props => (
   <Query query={QUERY} variables={{ simulatorId: props.simulator.id }}>
-    {({ loading, data, subscribeToMore }) => {
+    {({ loading, data = {}, subscribeToMore }) => {
       const { longRangeCommunications } = data;
       if (loading || !longRangeCommunications) return null;
       if (!longRangeCommunications[0]) return <div>No Long Range Comm</div>;

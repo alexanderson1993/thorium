@@ -4,12 +4,15 @@ import { titleCase } from "change-case";
 import DeckSelect from "./inputs/DeckSelect";
 import PartsPicker from "./inputs/PartsPicker";
 import DamageTeamPicker from "./inputs/DamageTeamPicker";
+import ProbeEquipment from "./inputs/ProbeEquipment";
+import InventoryInput from "./inputs/InventoryInput";
 
 const ValueInput = ({
   label,
   type,
   placeholder,
   value,
+  definitionValue,
   onBlur,
   simulatorId
 }) => {
@@ -22,7 +25,7 @@ const ValueInput = ({
               {titleCase(label)}
               <Input
                 type="text"
-                placeholder={value || placeholder}
+                placeholder={placeholder || definitionValue}
                 defaultValue={value}
                 onBlur={e => onBlur(e.target.value)}
               />
@@ -35,7 +38,7 @@ const ValueInput = ({
               <Input
                 type="textarea"
                 rows={3}
-                placeholder={value || placeholder}
+                placeholder={placeholder || definitionValue}
                 defaultValue={value}
                 onBlur={e => onBlur(e.target.value)}
               />
@@ -49,6 +52,19 @@ const ValueInput = ({
                 simulatorId={simulatorId}
                 value={value || placeholder}
                 onChange={onBlur}
+              />
+            </label>
+          );
+        }
+        if (type === "deckPicker") {
+          return (
+            <label>
+              {titleCase(label)}
+              <DeckSelect
+                simulatorId={simulatorId}
+                value={value || placeholder}
+                onChange={onBlur}
+                deckOnly
               />
             </label>
           );
@@ -73,15 +89,40 @@ const ValueInput = ({
             </label>
           );
         }
+        if (type === "probeEquipment") {
+          return (
+            <label>
+              {titleCase(label)}
+              <ProbeEquipment
+                simulatorId={simulatorId}
+                value={value || placeholder}
+                onChange={onBlur}
+              />
+            </label>
+          );
+        }
+        if (type === "inventoryInput") {
+          return (
+            <label>
+              {titleCase(label)}
+              <InventoryInput
+                simulatorId={simulatorId}
+                value={value || placeholder}
+                onChange={onBlur}
+              />
+            </label>
+          );
+        }
         if (typeof type === "object" && type.length > 0) {
           return (
             <label>
               {titleCase(label)}
               <Input
                 type="select"
-                value={value}
+                value={value || ""}
                 onChange={e => onBlur(e.target.value)}
               >
+                <option value={""}>Select one</option>
                 {type.map(v => (
                   <option key={`${v.label}-${v.value}`} value={v.value}>
                     {v.label}
